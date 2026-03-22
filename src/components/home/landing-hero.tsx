@@ -15,6 +15,7 @@ export function LandingHero() {
           className="object-cover object-center"
           sizes="100vw"
         />
+        <div className="absolute inset-0 bg-black/40" />
       </div>
 
       <div className="relative mt-auto flex min-h-[50vh] w-full flex-col items-center justify-center bg-white/70 px-6 py-12 text-center backdrop-blur-[2px] sm:py-16">
