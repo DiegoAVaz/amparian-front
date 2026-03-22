@@ -1,0 +1,111 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import fundoLogin from "@/assets/fundoLogin.png";
+import { findUser, setAuthCookie } from "@/lib/auth";
+
+export function LoginForm() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const user = findUser(email, password);
+
+    if (!user) {
+      setError("Email ou senha incorretos.");
+      setLoading(false);
+      return;
+    }
+
+    setAuthCookie(user.name);
+    router.push("/home");
+  }
+
+  return (
+    <section className="relative flex min-h-screen items-center justify-center">
+      <div className="absolute inset-0">
+        <Image
+          src={fundoLogin}
+          alt=""
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-black/40" />
+      </div>
+
+      <div className="relative flex w-full max-w-md flex-col items-center gap-6 rounded-2xl bg-white/30 px-10 py-10 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          <ShieldIcon />
+          <span className="text-2xl font-bold text-brand-teal">Amparian</span>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+          <input
+            type="email"
+            placeholder="Email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-lg border border-transparent bg-white/80 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-brand-teal focus:bg-white focus:ring-1 focus:ring-brand-teal"
+          />
+          <input
+            type="password"
+            placeholder="Senha"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-lg border border-transparent bg-white/80 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-brand-teal focus:bg-white focus:ring-1 focus:ring-brand-teal"
+          />
+
+          {error && (
+            <p className="rounded-lg bg-red-50/80 px-3 py-2 text-center text-xs font-medium text-red-600">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 w-full rounded-lg bg-brand-teal py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+          >
+            {loading ? "Entrando..." : "Login"}
+          </button>
+        </form>
+
+        <div className="flex items-center gap-3 text-sm text-brand-teal">
+          <Link href="/esqueci-minha-senha" className="hover:underline">
+            Esqueci minha senha
+          </Link>
+          <span className="text-brand-teal/50">|</span>
+          <Link href="/criar-conta" className="hover:underline">
+            Criar minha conta
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+      <path d="M18 3L5 8.5V17C5 24.18 10.64 30.9 18 33C25.36 30.9 31 24.18 31 17V8.5L18 3Z" fill="#064e3b" />
+      <path d="M18 6L8 10.8V17C8 23.12 12.56 28.78 18 30.6C23.44 28.78 28 23.12 28 17V10.8L18 6Z" fill="#0d9488" />
+    </svg>
+  );
+}
