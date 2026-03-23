@@ -30,10 +30,10 @@ export function SettingsContent() {
 
   return (
     <DashboardShell activeNav="settings">
-      <main className="flex flex-1 flex-col gap-8 overflow-auto p-6">
+      <main className="flex flex-1 flex-col gap-8 overflow-auto p-4 sm:p-6">
         <h1 className="text-xl font-bold text-brand-teal">Configurações</h1>
 
-        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
             <div className="flex flex-col items-center gap-3">
               <div className="flex h-36 w-36 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-cyan-500 text-3xl font-bold text-white">
@@ -74,10 +74,10 @@ export function SettingsContent() {
                 />
               </label>
 
-              <div className="flex justify-end pt-2">
+              <div className="flex pt-2 sm:justify-end">
                 <button
                   type="button"
-                  className="rounded-lg bg-brand-teal px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-teal-hover"
+                  className="w-full rounded-lg bg-brand-teal px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-teal-hover sm:w-auto"
                 >
                   Salvar detalhes da conta
                 </button>
@@ -129,8 +129,8 @@ export function SettingsContent() {
           </section>
         </div>
 
-        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex flex-wrap items-center gap-3">
+        <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <span className="text-xs font-medium text-gray-500">Visualização do plano (demo)</span>
             <div className="flex rounded-lg border border-gray-200 p-0.5 text-xs">
               <button
@@ -177,7 +177,7 @@ export function SettingsContent() {
               <div className="lg:col-span-2">
                 <button
                   type="button"
-                  className="w-full rounded-xl bg-green-500 py-3 text-sm font-bold text-white shadow-sm hover:bg-green-600"
+                  className="w-full rounded-xl bg-green-500 px-3 py-3 text-sm font-bold text-white shadow-sm hover:bg-green-600"
                 >
                   Faça upgrade para Pro
                 </button>

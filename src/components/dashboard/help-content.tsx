@@ -16,7 +16,7 @@ const CATEGORIES: { label: string; icon: ReactNode }[] = [
 export function HelpContent() {
   return (
     <DashboardShell activeNav="help">
-      <main className="flex flex-1 flex-col gap-10 overflow-auto p-6">
+      <main className="flex flex-1 flex-col gap-8 overflow-auto p-4 sm:gap-10 sm:p-6">
         <div className="text-center">
           <h1 className="text-lg font-bold text-brand-teal sm:text-xl">
             Olá, Bianca! Como podemos te ajudar hoje? 🌱
@@ -61,9 +61,9 @@ export function HelpContent() {
               href="https://wa.me/5521999999999"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex rounded-lg bg-brand-teal px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-teal-hover"
+              className="inline-flex max-w-full justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-teal-hover sm:px-5"
             >
-              Falar com suporte no whatsapp
+              <span className="break-words">Falar com suporte no whatsapp</span>
             </a>
             <span className="text-xs text-gray-500">amparian.suporte@gmail.com</span>
           </div>

@@ -35,13 +35,13 @@ export function MyEventsList() {
   return (
     <DashboardShell activeNav="events">
       <>
-        <main className="flex flex-1 flex-col gap-6 overflow-auto p-6">
+        <main className="flex flex-1 flex-col gap-6 overflow-auto p-4 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-xl font-bold text-brand-teal">Meus Eventos</h1>
             <button
               type="button"
               onClick={() => setModal("create-event")}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-600"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-600 sm:w-auto"
             >
               <span className="text-lg leading-none">+</span>
               Criar Evento
@@ -89,19 +89,19 @@ export function MyEventsList() {
               {filtered.map((event) => (
                 <article
                   key={event.id}
-                  className="flex overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
+                  className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm sm:flex-row"
                 >
                   <div
-                    className={`flex h-28 w-36 flex-shrink-0 bg-gradient-to-br ${event.imageClassName} sm:h-32 sm:w-44`}
+                    className={`flex h-32 w-full flex-shrink-0 bg-gradient-to-br sm:h-32 sm:w-44 ${event.imageClassName}`}
                     aria-hidden
                   />
-                  <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-semibold text-brand-teal">{event.title}</h2>
                     </div>
                     <Link
                       href={`/home/meus-eventos/${event.id}`}
-                      className="inline-flex items-center justify-center rounded-lg bg-brand-teal px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-teal-hover sm:flex-shrink-0"
+                      className="inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-teal-hover sm:w-auto sm:flex-shrink-0"
                     >
                       Ver detalhes
                     </Link>
