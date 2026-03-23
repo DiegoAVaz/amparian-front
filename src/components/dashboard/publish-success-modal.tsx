@@ -4,11 +4,12 @@ type Props = { onClose: () => void };
 
 export function PublishSuccessModal({ onClose }: Props) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="relative w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+      <div className="relative max-h-[92dvh] w-full max-w-sm overflow-y-auto rounded-t-2xl bg-white p-5 text-center shadow-xl sm:rounded-2xl sm:p-8">
         <button
+          type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 sm:right-4 sm:top-4"
           aria-label="Fechar"
         >
           <XIcon />
@@ -41,12 +42,14 @@ export function PublishSuccessModal({ onClose }: Props) {
           <p className="text-xs font-medium text-gray-600">Compartilhe nas redes sociais!</p>
           <div className="flex gap-3">
             <button
+              type="button"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500 text-white transition-colors hover:bg-green-600"
               aria-label="Compartilhar no WhatsApp"
             >
               <WhatsAppIcon />
             </button>
             <button
+              type="button"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white transition-opacity hover:opacity-90"
               aria-label="Compartilhar no Instagram"
             >
@@ -55,13 +58,17 @@ export function PublishSuccessModal({ onClose }: Props) {
           </div>
         </div>
 
-        <div className="mt-5 flex gap-3">
-          <button className="flex-1 rounded-lg bg-brand-teal py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover">
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:gap-3">
+          <button
+            type="button"
+            className="w-full flex-1 rounded-lg bg-brand-teal py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover sm:w-auto"
+          >
             Ver meu evento
           </button>
           <button
+            type="button"
             onClick={onClose}
-            className="flex-1 rounded-lg border border-brand-teal py-2.5 text-sm font-semibold text-brand-teal transition-colors hover:bg-brand-teal/5"
+            className="w-full flex-1 rounded-lg border border-brand-teal py-2.5 text-sm font-semibold text-brand-teal transition-colors hover:bg-brand-teal/5 sm:w-auto"
           >
             Voltar para home
           </button>

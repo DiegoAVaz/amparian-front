@@ -9,9 +9,10 @@ type Props = {
 
 export function EventDetailModal({ event, onClose }: Props) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="relative flex w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+      <div className="relative flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl md:max-h-[90vh] md:rounded-2xl md:flex-row">
         <button
+          type="button"
           onClick={onClose}
           className="absolute right-3 top-3 z-10 rounded-full bg-white/80 p-1 text-gray-400 hover:text-gray-600"
           aria-label="Fechar"
@@ -20,12 +21,12 @@ export function EventDetailModal({ event, onClose }: Props) {
         </button>
 
         {/* Image — adicionar src/assets/{event.imageKey}.jpg */}
-        <div className="w-44 flex-shrink-0 bg-gray-200 flex items-center justify-center">
-          <span className="text-[9px] text-gray-400 text-center px-2">{event.imageKey}.jpg</span>
+        <div className="flex h-40 w-full flex-shrink-0 items-center justify-center bg-gray-200 md:h-auto md:w-44">
+          <span className="px-2 text-center text-[9px] text-gray-400">{event.imageKey}.jpg</span>
         </div>
 
         {/* Details */}
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
+        <div className="flex max-h-[min(60vh,28rem)] flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-6 md:max-h-[85vh]">
           <div>
             <h2 className="text-xl font-extrabold uppercase tracking-wide text-brand-teal">
               {event.title}

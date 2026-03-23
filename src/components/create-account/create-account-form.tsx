@@ -46,7 +46,7 @@ export function CreateAccountForm() {
     "w-full rounded-lg border border-transparent bg-white/80 px-4 py-3 text-sm text-gray-700 placeholder-gray-500 outline-none focus:border-brand-teal focus:bg-white focus:ring-1 focus:ring-brand-teal";
 
   return (
-    <section className="relative flex min-h-screen items-center justify-center">
+    <section className="relative flex min-h-[100dvh] items-center justify-center px-4 py-8 sm:px-6 sm:py-10">
       <div className="absolute inset-0">
         <Image
           src={fundoCreateAccount}
@@ -59,7 +59,7 @@ export function CreateAccountForm() {
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
-      <div className="relative flex w-full max-w-lg flex-col items-center gap-5 rounded-2xl bg-white/30 px-10 py-10 backdrop-blur-sm">
+      <div className="relative flex w-full max-w-lg flex-col items-center gap-5 rounded-2xl bg-white/30 px-5 py-8 backdrop-blur-sm sm:px-10 sm:py-10">
         <div className="flex items-center gap-3">
           <ShieldIcon />
           <span className="text-2xl font-bold text-brand-teal">Amparian</span>
@@ -115,14 +115,14 @@ export function CreateAccountForm() {
             className={inputCls}
           />
 
-          <label className="flex items-center gap-2 text-sm text-brand-teal">
+          <label className="flex items-start gap-2 text-sm leading-snug text-brand-teal">
             <input
               type="checkbox"
-              className="h-4 w-4 accent-brand-teal"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-brand-teal"
               checked={terms}
               onChange={(e) => setTerms(e.target.checked)}
             />
-            <span>
+            <span className="min-w-0">
               Li e aceito os{" "}
               <Link href="#" className="underline hover:text-brand-teal-hover">
                 termos de uso da plataforma

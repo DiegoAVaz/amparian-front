@@ -18,8 +18,8 @@ export function LandingHero() {
         <div className="absolute inset-0 bg-black/40" />
       </div>
 
-      <div className="relative mt-auto flex min-h-[50vh] w-full flex-col items-center justify-center bg-white/70 px-6 py-12 text-center backdrop-blur-[2px] sm:py-16">
-        <div className="mx-auto flex max-w-2xl flex-col items-center gap-4">
+      <div className="relative mt-auto flex min-h-[45vh] w-full flex-col items-center justify-center bg-white/70 px-4 py-10 text-center backdrop-blur-[2px] sm:min-h-[50vh] sm:px-6 sm:py-16">
+        <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-4">
           <h1
             id="landing-heading"
             className="text-3xl font-bold leading-tight tracking-tight text-brand-teal sm:text-4xl md:text-5xl"

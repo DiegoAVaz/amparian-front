@@ -100,7 +100,7 @@ export function AgendaContent() {
 
   return (
     <DashboardShell activeNav="agenda">
-      <main className="flex flex-1 flex-col gap-6 overflow-auto p-6">
+      <main className="flex flex-1 flex-col gap-6 overflow-auto p-4 sm:p-6">
         <h1 className="text-xl font-bold text-brand-teal">Agenda</h1>
 
         <div className="flex flex-1 flex-col gap-6 xl:flex-row">
@@ -120,13 +120,13 @@ export function AgendaContent() {
               {visibleEvents.map((ev) => (
                 <div
                   key={ev.id}
-                  className="flex overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
+                  className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm sm:flex-row"
                 >
                   <div
-                    className={`h-28 w-32 flex-shrink-0 bg-gradient-to-br sm:h-32 sm:w-44 ${ev.imageClass}`}
+                    className={`h-32 w-full flex-shrink-0 bg-gradient-to-br sm:h-32 sm:w-44 ${ev.imageClass}`}
                     aria-hidden
                   />
-                  <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                  <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                     <div className="min-w-0">
                       <p className="font-semibold text-gray-900">{ev.title}</p>
                       <p className="text-sm text-gray-500">{ev.org}</p>
@@ -134,7 +134,7 @@ export function AgendaContent() {
                     </div>
                     <Link
                       href="/home/em-breve"
-                      className="inline-flex flex-shrink-0 items-center justify-center rounded-lg bg-brand-teal px-4 py-2 text-xs font-semibold text-white hover:bg-brand-teal-hover"
+                      className="inline-flex w-full flex-shrink-0 items-center justify-center rounded-lg bg-brand-teal px-4 py-2 text-xs font-semibold text-white hover:bg-brand-teal-hover sm:w-auto"
                     >
                       Ver detalhes
                     </Link>
@@ -174,14 +174,14 @@ export function AgendaContent() {
                 ))}
               </div>
 
-              <div className="mt-1 grid grid-cols-7 gap-1 text-center text-sm">
+              <div className="mt-1 grid grid-cols-7 gap-0.5 text-center text-xs sm:gap-1 sm:text-sm">
                 {cells.map((cell, i) => {
                   const highlighted = isEventDay(cell.day, cell.inMonth);
                   return (
                     <div
                       key={`${cell.day}-${i}`}
                       className={[
-                        "flex h-9 items-center justify-center rounded-full text-sm",
+                        "flex h-8 items-center justify-center rounded-full sm:h-9",
                         cell.muted ? "text-gray-300" : "text-gray-800",
                         highlighted ? "bg-brand-teal font-semibold text-white" : "",
                       ].join(" ")}
