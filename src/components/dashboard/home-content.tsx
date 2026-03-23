@@ -36,12 +36,12 @@ export function HomeContent() {
   return (
     <DashboardShell activeNav="home">
       <>
-        <main className="flex flex-1 flex-col gap-6 overflow-auto p-6">
-          <div className="flex h-48 overflow-hidden rounded-xl shadow-sm">
-            <div className="flex flex-1 items-center justify-center bg-gray-300">
+        <main className="flex flex-1 flex-col gap-6 overflow-auto p-4 sm:p-6">
+          <div className="flex min-h-[12rem] flex-col overflow-hidden rounded-xl shadow-sm sm:min-h-0 sm:h-48 sm:flex-row">
+            <div className="flex min-h-[8rem] flex-1 items-center justify-center bg-gray-300 sm:min-h-0">
               <span className="text-xs text-gray-400">bannerVoluntarios.jpg</span>
             </div>
-            <div className="flex w-72 flex-shrink-0 flex-col items-start justify-center gap-3 bg-[#064e3b] p-7">
+            <div className="flex w-full flex-shrink-0 flex-col items-start justify-center gap-3 bg-[#064e3b] p-5 sm:w-72 sm:p-7">
               <p className="text-sm font-bold leading-snug text-white">
                 Você sabia que pode criar seu próprio evento?
               </p>
@@ -56,8 +56,8 @@ export function HomeContent() {
             </div>
           </div>
 
-          <div className="flex gap-6">
-            <div className="flex flex-1 flex-col gap-4">
+          <div className="flex flex-col gap-6 lg:flex-row">
+            <div className="flex min-w-0 flex-1 flex-col gap-4">
               <h2 className="text-base font-semibold text-brand-teal">
                 Oportunidades recomendadas para você
               </h2>
@@ -67,7 +67,7 @@ export function HomeContent() {
                 <input
                   type="text"
                   placeholder="Pesquise por evento, ONG ou habilidade"
-                  className="flex-1 text-sm text-gray-500 outline-none placeholder:text-gray-400"
+                  className="min-w-0 flex-1 text-sm text-gray-500 outline-none placeholder:text-gray-400"
                 />
               </div>
 
@@ -75,22 +75,22 @@ export function HomeContent() {
                 {SAMPLE_EVENTS.map((event) => (
                   <div
                     key={event.id}
-                    className="flex overflow-hidden rounded-xl bg-white shadow-sm"
+                    className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm sm:flex-row"
                   >
-                    <div className="flex w-28 flex-shrink-0 items-center justify-center bg-gray-200">
+                    <div className="flex h-32 w-full flex-shrink-0 items-center justify-center bg-gray-200 sm:h-auto sm:w-28">
                       <span className="px-1 text-center text-[9px] text-gray-400">
                         {event.imageKey}.jpg
                       </span>
                     </div>
-                    <div className="flex flex-1 items-center justify-between px-4 py-3">
-                      <div>
+                    <div className="flex flex-1 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
                         <p className="text-sm font-semibold text-brand-teal">{event.title}</p>
                         <p className="text-xs text-gray-400">{event.org}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => openDetail(event)}
-                        className="rounded-lg bg-brand-teal px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-teal-hover"
+                        className="w-full shrink-0 rounded-lg bg-brand-teal px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-teal-hover sm:w-auto"
                       >
                         Ver detalhes
                       </button>
@@ -100,9 +100,11 @@ export function HomeContent() {
               </div>
             </div>
 
-            <div className="flex w-64 flex-shrink-0 flex-col gap-3">
+            <div className="flex w-full flex-shrink-0 flex-col gap-3 lg:w-64">
               <h2 className="text-base font-semibold text-brand-teal">Meu impacto</h2>
-              <ImpactChart data={CHART_DATA} />
+              <div className="w-full overflow-x-auto">
+                <ImpactChart data={CHART_DATA} />
+              </div>
             </div>
           </div>
         </main>
@@ -154,7 +156,13 @@ function ImpactChart({ data }: { data: ChartPoint[] }) {
 
   return (
     <div className="rounded-xl bg-white p-3 shadow-sm">
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="overflow-visible">
+      <svg
+        width={W}
+        height={H}
+        viewBox={`0 0 ${W} ${H}`}
+        className="overflow-visible max-w-full"
+        preserveAspectRatio="xMidYMid meet"
+      >
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />

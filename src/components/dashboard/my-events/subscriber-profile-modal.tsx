@@ -11,12 +11,12 @@ type Props = {
 export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence }: Props) {
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-perfil-titulo"
     >
-      <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+      <div className="relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:rounded-2xl sm:p-6">
         <button
           type="button"
           onClick={onClose}
@@ -75,18 +75,18 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
           </div>
         </dl>
 
-        <div className="mt-8 flex justify-end gap-3">
+        <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-red-600 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+            className="w-full rounded-lg border border-red-600 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 sm:w-auto"
           >
             Fechar
           </button>
           <button
             type="button"
             onClick={onConfirmPresence}
-            className="rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-600"
+            className="w-full rounded-lg bg-green-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-600 sm:w-auto"
           >
             Confirmar Presença
           </button>

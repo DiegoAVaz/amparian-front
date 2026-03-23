@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { clearAuthCookie } from "@/lib/auth";
 import {
   AgendaNavIcon,
   BellIcon,
+  CloseIcon,
   EventsNavIcon,
   HelpNavIcon,
   HomeNavIcon,
   LogoutNavIcon,
+  MenuIcon,
   PerfisNavIcon,
   SettingsNavIcon,
   ShieldIcon,
@@ -24,7 +27,6 @@ export type DashboardNavId =
   | "settings"
   | "help"
   | "profiles"
-  /** Nenhum item ativo (ex.: página genérica) */
   | "none";
 
 type Props = {
@@ -34,25 +36,67 @@ type Props = {
 
 export function DashboardShell({ activeNav, children }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    function onChange() {
+      if (mq.matches) setMobileNavOpen(false);
+    }
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  function closeMobileNav() {
+    setMobileNavOpen(false);
+  }
 
   function handleLogout() {
+    closeMobileNav();
     clearAuthCookie();
     router.push("/login");
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f0f8fa]">
-      <header className="flex items-center justify-between bg-brand-teal px-6 py-3">
-        <div className="flex items-center gap-2">
-          <ShieldIcon variant="white" size={28} />
-          <span className="text-lg font-bold text-white">Amparian</span>
+    <div className="flex min-h-[100dvh] flex-col bg-[#f0f8fa]">
+      <header className="flex shrink-0 items-center justify-between gap-3 bg-brand-teal px-4 py-3 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            className="shrink-0 rounded-lg p-2 text-white hover:bg-white/10 lg:hidden"
+            aria-expanded={mobileNavOpen}
+            aria-controls="dashboard-sidebar"
+            aria-label={mobileNavOpen ? "Fechar menu" : "Abrir menu"}
+            onClick={() => setMobileNavOpen((o) => !o)}
+          >
+            {mobileNavOpen ? <CloseIcon /> : <MenuIcon />}
+          </button>
+          <div className="flex min-w-0 items-center gap-2">
+            <ShieldIcon variant="white" size={28} />
+            <span className="truncate text-base font-bold text-white sm:text-lg">Amparian</span>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-white">Olá, Bianca!</span>
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <span className="hidden text-sm font-medium text-white sm:inline">Olá, Bianca!</span>
           <Link
             href="/home/perfis"
             className="text-white/90 hover:text-white"
             aria-label="Meu perfil"
+            onClick={closeMobileNav}
           >
             <UserIcon />
           </Link>
@@ -62,38 +106,70 @@ export function DashboardShell({ activeNav, children }: Props) {
         </div>
       </header>
 
-      <div className="flex flex-1">
-        <aside className="flex w-56 flex-shrink-0 flex-col border-r border-gray-100 bg-white shadow-sm">
-          <nav className="flex flex-1 flex-col gap-0.5 p-3 pt-5">
+      <div className="relative flex min-h-0 flex-1">
+        {mobileNavOpen && (
+          <button
+            type="button"
+            className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+            aria-label="Fechar menu"
+            onClick={closeMobileNav}
+          />
+        )}
+
+        <aside
+          id="dashboard-sidebar"
+          className={[
+            "fixed inset-y-0 left-0 z-40 flex w-[min(18rem,88vw)] flex-col border-r border-gray-100 bg-white shadow-lg transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-56 lg:translate-x-0 lg:shadow-sm",
+            mobileNavOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          ].join(" ")}
+        >
+          <div className="flex items-center justify-between border-b border-gray-100 px-3 py-3 lg:hidden">
+            <span className="text-sm font-semibold text-brand-teal">Menu</span>
+            <button
+              type="button"
+              className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+              aria-label="Fechar menu"
+              onClick={closeMobileNav}
+            >
+              <CloseIcon />
+            </button>
+          </div>
+
+          <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3 pt-4 lg:pt-5">
             <SidebarLink
               href="/home"
               icon={<HomeNavIcon />}
               label="Home"
               active={activeNav === "home"}
+              onNavigate={closeMobileNav}
             />
             <SidebarLink
               href="/home/meus-eventos"
               icon={<EventsNavIcon />}
               label="Meus eventos"
               active={activeNav === "events"}
+              onNavigate={closeMobileNav}
             />
             <SidebarLink
               href="/home/agenda"
               icon={<AgendaNavIcon />}
               label="Agenda"
               active={activeNav === "agenda"}
+              onNavigate={closeMobileNav}
             />
             <SidebarLink
               href="/home/configuracoes"
               icon={<SettingsNavIcon />}
               label="Configurações"
               active={activeNav === "settings"}
+              onNavigate={closeMobileNav}
             />
             <SidebarLink
               href="/home/perfis"
               icon={<PerfisNavIcon />}
               label="Perfis"
               active={activeNav === "profiles"}
+              onNavigate={closeMobileNav}
             />
           </nav>
           <div className="flex flex-col gap-0.5 border-t border-gray-100 p-3">
@@ -102,6 +178,7 @@ export function DashboardShell({ activeNav, children }: Props) {
               icon={<HelpNavIcon />}
               label="Ajuda"
               active={activeNav === "help"}
+              onNavigate={closeMobileNav}
             />
             <SidebarItem
               icon={<LogoutNavIcon />}
@@ -123,22 +200,25 @@ function SidebarLink({
   icon,
   label,
   active,
+  onNavigate,
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
   active?: boolean;
+  onNavigate?: () => void;
 }) {
   return (
     <Link
       href={href}
+      onClick={onNavigate}
       className={[
-        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
+        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors active:bg-gray-50",
         active ? "bg-brand-teal text-white shadow-sm" : "text-gray-600 hover:bg-gray-100",
       ].join(" ")}
     >
       {icon}
-      {label}
+      <span className="truncate">{label}</span>
     </Link>
   );
 }
@@ -161,7 +241,7 @@ function SidebarItem({
       type="button"
       onClick={onClick}
       className={[
-        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
+        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors",
         active
           ? "bg-brand-teal/10 text-brand-teal"
           : danger
@@ -170,7 +250,7 @@ function SidebarItem({
       ].join(" ")}
     >
       {icon}
-      {label}
+      <span className="truncate">{label}</span>
     </button>
   );
 }

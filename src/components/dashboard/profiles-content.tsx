@@ -29,7 +29,7 @@ const LAST_EVENTS = [
 export function ProfilesContent() {
   return (
     <DashboardShell activeNav="profiles">
-      <main className="flex flex-1 flex-col gap-8 overflow-auto p-6">
+      <main className="flex flex-1 flex-col gap-8 overflow-auto p-4 sm:p-6">
         <h1 className="text-xl font-bold text-brand-teal">Perfis</h1>
 
         <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -106,20 +106,20 @@ export function ProfilesContent() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Link
               href="/home/em-breve"
-              className="inline-flex items-center justify-center rounded-lg bg-green-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-600"
+              className="inline-flex w-full items-center justify-center rounded-lg bg-green-500 px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-green-600 sm:w-auto"
             >
               Ver meu histórico de eventos
             </Link>
-            <div className="flex flex-wrap gap-2 sm:justify-end">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
               <Link
                 href="/home/configuracoes"
-                className="inline-flex items-center justify-center rounded-lg border-2 border-brand-teal bg-white px-4 py-2 text-sm font-semibold text-brand-teal hover:bg-brand-teal/5"
+                className="inline-flex w-full items-center justify-center rounded-lg border-2 border-brand-teal bg-white px-4 py-2 text-sm font-semibold text-brand-teal hover:bg-brand-teal/5 sm:w-auto"
               >
                 Editar perfil
               </Link>
               <button
                 type="button"
-                className="inline-flex items-center justify-center rounded-lg border-2 border-brand-teal bg-white px-4 py-2 text-sm font-semibold text-brand-teal hover:bg-brand-teal/5"
+                className="inline-flex w-full items-center justify-center rounded-lg border-2 border-brand-teal bg-white px-4 py-2 text-sm font-semibold text-brand-teal hover:bg-brand-teal/5 sm:w-auto"
               >
                 Compartilhar perfil
               </button>
