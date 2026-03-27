@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { clearAuthCookie } from "@/lib/auth";
+import { getStoredUser, logoutAndClear } from "@/lib/auth";
 import {
   AgendaNavIcon,
   BellIcon,
@@ -38,9 +38,17 @@ export function DashboardShell({ activeNav, children }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const userName = useSyncExternalStore(
+    subscribeToSession,
+    () => getStoredUser()?.name ?? null,
+    () => null,
+  );
 
   useEffect(() => {
-    setMobileNavOpen(false);
+    const frame = window.requestAnimationFrame(() => {
+      setMobileNavOpen(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
 
   useEffect(() => {
@@ -65,9 +73,9 @@ export function DashboardShell({ activeNav, children }: Props) {
     setMobileNavOpen(false);
   }
 
-  function handleLogout() {
+  async function handleLogout() {
     closeMobileNav();
-    clearAuthCookie();
+    await logoutAndClear();
     router.push("/login");
   }
 
@@ -91,7 +99,9 @@ export function DashboardShell({ activeNav, children }: Props) {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <span className="hidden text-sm font-medium text-white sm:inline">Olá, Bianca!</span>
+          <span className="hidden text-sm font-medium text-white sm:inline">
+            {userName ? `Olá, ${userName.split(" ")[0]}!` : "Olá!"}
+          </span>
           <Link
             href="/home/perfis"
             className="text-white/90 hover:text-white"
@@ -193,6 +203,11 @@ export function DashboardShell({ activeNav, children }: Props) {
       </div>
     </div>
   );
+}
+
+function subscribeToSession(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
 }
 
 function SidebarLink({

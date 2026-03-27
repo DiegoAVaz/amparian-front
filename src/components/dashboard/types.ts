@@ -2,6 +2,10 @@ export type EventSummary = {
   id: number;
   title: string;
   org: string;
-  /** Filename sem extensão — colocar em src/assets/<imageKey>.jpg */
-  imageKey: string;
+  summary: string;
+  startsAt: string;
+  locationName: string | null;
+  isRemote: boolean;
+  capacity: number | null;
+  coverImageUrl: string | null;
 };

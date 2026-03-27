@@ -1,6 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import {
+  type OrganizerEventDetail,
+  type UserStats,
+  getMyProfile,
+  getMyStats,
+  getPublicEvents,
+} from "@/lib/amparian-api";
+import { ApiError } from "@/lib/api";
 
 import type { EventSummary } from "./types";
 import { CreateEventModal } from "./create-event-modal";
@@ -11,35 +21,114 @@ import { PublishErrorModal } from "./publish-error-modal";
 
 type ModalState = "none" | "create-event" | "event-detail" | "publish-success" | "publish-error";
 
-const SAMPLE_EVENTS: EventSummary[] = [
-  { id: 1, title: "Mutirão de limpeza", org: "Ong Guerrilha do BEM", imageKey: "eventoMutirao" },
-  { id: 2, title: "Instrutor Voluntário", org: "Ong Sabber", imageKey: "eventoInstrutor" },
-];
-
-const CHART_DATA = [
-  { label: "2021", value: 8 },
-  { label: "2022", value: 16 },
-  { label: "2023", value: 27 },
-  { label: "2024", value: 36 },
-  { label: "2025", value: 46 },
-];
-
 export function HomeContent() {
+  const router = useRouter();
   const [modal, setModal] = useState<ModalState>("none");
-  const [selectedEvent, setSelectedEvent] = useState<EventSummary>(SAMPLE_EVENTS[0]);
+  const [events, setEvents] = useState<EventSummary[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<EventSummary | null>(null);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [savedEvent, setSavedEvent] = useState<OrganizerEventDetail | null>(null);
+  const [publishError, setPublishError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStats() {
+      try {
+        const [profile, nextStats] = await Promise.all([getMyProfile(), getMyStats()]);
+        if (!cancelled) {
+          setUserName(profile.publicOrganizationName || profile.name);
+          setStats(nextStats);
+        }
+      } catch {
+        /* dashboard can still load events */
+      }
+    }
+
+    void loadStats();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEvents() {
+      setLoading(true);
+      setError("");
+      try {
+        const nextEvents = await getPublicEvents(query);
+        if (!cancelled) {
+          setEvents(nextEvents);
+          if (!selectedEvent && nextEvents[0]) setSelectedEvent(nextEvents[0]);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : "Não foi possível carregar os eventos.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    const timer = window.setTimeout(() => {
+      void loadEvents();
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query, selectedEvent]);
 
   function openDetail(event: EventSummary) {
     setSelectedEvent(event);
     setModal("event-detail");
   }
 
+  function handleSaved(event: OrganizerEventDetail, action: "draft" | "published") {
+    setSavedEvent(event);
+    void refreshEvents();
+    setModal(action === "published" ? "publish-success" : "none");
+  }
+
+  async function refreshEvents() {
+    try {
+      const nextEvents = await getPublicEvents(query);
+      setEvents(nextEvents);
+    } catch {
+      /* keep current UI */
+    }
+  }
+
+  const statCards = stats
+    ? [
+        { label: "Horas doadas", value: stats.hoursDonated },
+        { label: "Causas apoiadas", value: stats.causesSupported },
+        { label: "Eventos frequentados", value: stats.eventsAttended },
+        { label: "Eventos criados", value: stats.eventsCreated },
+      ]
+    : [];
+
   return (
     <DashboardShell activeNav="home">
       <>
         <main className="flex flex-1 flex-col gap-6 overflow-auto p-4 sm:p-6">
           <div className="flex min-h-[12rem] flex-col overflow-hidden rounded-xl shadow-sm sm:min-h-0 sm:h-48 sm:flex-row">
-            <div className="flex min-h-[8rem] flex-1 items-center justify-center bg-gray-300 sm:min-h-0">
-              <span className="text-xs text-gray-400">bannerVoluntarios.jpg</span>
+            <div className="flex min-h-[8rem] flex-1 items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-700 px-6 text-center sm:min-h-0">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/70">
+                  Comunidade em ação
+                </p>
+                <p className="mt-2 text-xl font-bold text-white">
+                  Descubra novas causas para apoiar e crie seu próprio movimento.
+                </p>
+              </div>
             </div>
             <div className="flex w-full flex-shrink-0 flex-col items-start justify-center gap-3 bg-[#064e3b] p-5 sm:w-72 sm:p-7">
               <p className="text-sm font-bold leading-snug text-white">
@@ -58,52 +147,88 @@ export function HomeContent() {
 
           <div className="flex flex-col gap-6 lg:flex-row">
             <div className="flex min-w-0 flex-1 flex-col gap-4">
-              <h2 className="text-base font-semibold text-brand-teal">
-                Oportunidades recomendadas para você
-              </h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-base font-semibold text-brand-teal">
+                  Oportunidades abertas para você
+                </h2>
+                {userName && <span className="text-xs text-gray-500">por {userName}</span>}
+              </div>
 
               <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
                 <SearchIcon />
                 <input
                   type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
                   placeholder="Pesquise por evento, ONG ou habilidade"
                   className="min-w-0 flex-1 text-sm text-gray-500 outline-none placeholder:text-gray-400"
                 />
               </div>
 
-              <div className="flex flex-col gap-3">
-                {SAMPLE_EVENTS.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm sm:flex-row"
-                  >
-                    <div className="flex h-32 w-full flex-shrink-0 items-center justify-center bg-gray-200 sm:h-auto sm:w-28">
-                      <span className="px-1 text-center text-[9px] text-gray-400">
-                        {event.imageKey}.jpg
-                      </span>
-                    </div>
-                    <div className="flex flex-1 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-brand-teal">{event.title}</p>
-                        <p className="text-xs text-gray-400">{event.org}</p>
+              {loading ? (
+                <p className="rounded-xl bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm">
+                  Carregando eventos...
+                </p>
+              ) : error ? (
+                <p className="rounded-xl bg-red-50 px-4 py-8 text-center text-sm text-red-600 shadow-sm">
+                  {error}
+                </p>
+              ) : events.length === 0 ? (
+                <p className="rounded-xl bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm">
+                  Nenhum evento encontrado no momento.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {events.map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm sm:flex-row"
+                    >
+                      <div className="flex h-32 w-full flex-shrink-0 items-center justify-center bg-gray-200 sm:h-auto sm:w-28">
+                        {event.coverImageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={event.coverImageUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="px-1 text-center text-[9px] text-gray-400">Sem capa</span>
+                        )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => openDetail(event)}
-                        className="w-full shrink-0 rounded-lg bg-brand-teal px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-teal-hover sm:w-auto"
-                      >
-                        Ver detalhes
-                      </button>
+                      <div className="flex flex-1 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-brand-teal">{event.title}</p>
+                          <p className="text-xs text-gray-400">{event.org}</p>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {new Date(event.startsAt).toLocaleDateString("pt-BR")} •{" "}
+                            {event.isRemote ? "Remoto" : event.locationName ?? "Local a confirmar"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => openDetail(event)}
+                          className="w-full shrink-0 rounded-lg bg-brand-teal px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-teal-hover sm:w-auto"
+                        >
+                          Ver detalhes
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="flex w-full flex-shrink-0 flex-col gap-3 lg:w-64">
+            <div className="flex w-full flex-shrink-0 flex-col gap-3 lg:w-80">
               <h2 className="text-base font-semibold text-brand-teal">Meu impacto</h2>
-              <div className="w-full overflow-x-auto">
-                <ImpactChart data={CHART_DATA} />
+              <div className="grid grid-cols-2 gap-3">
+                {statCards.map((item) => (
+                  <div key={item.label} className="rounded-xl bg-white p-4 shadow-sm">
+                    <p className="text-2xl font-bold text-brand-teal">{item.value}</p>
+                    <p className="mt-1 text-xs uppercase tracking-wide text-gray-500">{item.label}</p>
+                  </div>
+                ))}
+                {statCards.length === 0 && (
+                  <div className="col-span-2 rounded-xl bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm">
+                    Não foi possível carregar seus indicadores agora.
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -112,110 +237,34 @@ export function HomeContent() {
         {modal === "create-event" && (
           <CreateEventModal
             onClose={() => setModal("none")}
-            onPublish={() => setModal("publish-success")}
-            onError={() => setModal("publish-error")}
+            onSaved={handleSaved}
+            onError={(message) => {
+              setPublishError(message);
+              setModal("publish-error");
+            }}
           />
         )}
-        {modal === "event-detail" && (
+        {modal === "event-detail" && selectedEvent && (
           <EventDetailModal event={selectedEvent} onClose={() => setModal("none")} />
         )}
         {modal === "publish-success" && (
-          <PublishSuccessModal onClose={() => setModal("none")} />
+          <PublishSuccessModal
+            onClose={() => setModal("none")}
+            eventTitle={savedEvent?.title}
+            eventOrg={userName ?? undefined}
+            eventDate={savedEvent ? new Date(savedEvent.startsAt).toLocaleDateString("pt-BR") : null}
+            onViewEvent={() => savedEvent && router.push(`/home/meus-eventos/${savedEvent.id}`)}
+          />
         )}
         {modal === "publish-error" && (
           <PublishErrorModal
             onClose={() => setModal("none")}
             onRetry={() => setModal("create-event")}
+            message={publishError}
           />
         )}
       </>
     </DashboardShell>
-  );
-}
-
-type ChartPoint = { label: string; value: number };
-
-function ImpactChart({ data }: { data: ChartPoint[] }) {
-  const W = 240;
-  const H = 170;
-  const pad = { top: 12, right: 8, bottom: 28, left: 36 };
-  const cW = W - pad.left - pad.right;
-  const cH = H - pad.top - pad.bottom;
-  const maxV = 50;
-
-  const x = (i: number) => (i / (data.length - 1)) * cW;
-  const y = (v: number) => cH - (v / maxV) * cH;
-
-  const line = data
-    .map((d, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(d.value).toFixed(1)}`)
-    .join(" ");
-
-  const area = `M0,${cH} ${data.map((d, i) => `L${x(i).toFixed(1)},${y(d.value).toFixed(1)}`).join(" ")} L${cW},${cH} Z`;
-
-  const yTicks = [50, 40, 30, 20, 10, 0];
-
-  return (
-    <div className="rounded-xl bg-white p-3 shadow-sm">
-      <svg
-        width={W}
-        height={H}
-        viewBox={`0 0 ${W} ${H}`}
-        className="overflow-visible max-w-full"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        <defs>
-          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.03" />
-          </linearGradient>
-        </defs>
-        <g transform={`translate(${pad.left},${pad.top})`}>
-          {yTicks.map((v) => (
-            <g key={v}>
-              <line
-                x1="0"
-                y1={y(v).toFixed(1)}
-                x2={cW}
-                y2={y(v).toFixed(1)}
-                stroke="#e5e7eb"
-                strokeWidth="1"
-              />
-              <text x="-5" y={y(v) + 3.5} textAnchor="end" fontSize="9" fill="#9ca3af">
-                {v > 0 ? `${v / 10}k` : "0"}
-              </text>
-            </g>
-          ))}
-
-          <path d={area} fill="url(#areaGrad)" />
-
-          <path
-            d={line}
-            fill="none"
-            stroke="#7c3aed"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {data.map((d, i) => (
-            <circle key={d.label} cx={x(i)} cy={y(d.value)} r="3" fill="#7c3aed" />
-          ))}
-
-          {data.map((d, i) => (
-            <text
-              key={d.label}
-              x={x(i)}
-              y={cH + 17}
-              textAnchor="middle"
-              fontSize="9"
-              fill="#9ca3af"
-            >
-              {d.label}
-            </text>
-          ))}
-        </g>
-      </svg>
-    </div>
   );
 }
 

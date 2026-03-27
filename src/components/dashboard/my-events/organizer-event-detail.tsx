@@ -1,28 +1,125 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
+import {
+  type OrganizerEventDetail as OrganizerEventDetailRecord,
+  type SubscriberRecord,
+  deleteOrganizerEvent,
+  getOrganizerEvent,
+  getOrganizerRegistrations,
+  updateOrganizerRegistrationStatus,
+} from "@/lib/amparian-api";
+import { ApiError } from "@/lib/api";
+import { CreateEventModal } from "@/components/dashboard/create-event-modal";
+import { PublishErrorModal } from "@/components/dashboard/publish-error-modal";
+import { PublishSuccessModal } from "@/components/dashboard/publish-success-modal";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
-import type { OrganizerEventRecord, SubscriberRecord } from "./my-events-data";
-import { getSubscribersForEvent } from "./my-events-data";
 import { SubscriberProfileModal } from "./subscriber-profile-modal";
 
 type Props = {
-  event: OrganizerEventRecord;
+  eventId: string;
 };
 
-export function OrganizerEventDetail({ event }: Props) {
-  const [rows, setRows] = useState<SubscriberRecord[]>(() => getSubscribersForEvent(event.id));
-  const [subscriberModal, setSubscriberModal] = useState<SubscriberRecord | null>(null);
+type ModalState = "none" | "edit" | "publish-success" | "publish-error";
 
-  const exportCsv = useCallback(() => {
+export function OrganizerEventDetail({ eventId }: Props) {
+  const router = useRouter();
+  const [event, setEvent] = useState<OrganizerEventDetailRecord | null>(null);
+  const [rows, setRows] = useState<SubscriberRecord[]>([]);
+  const [subscriberModal, setSubscriberModal] = useState<SubscriberRecord | null>(null);
+  const [modal, setModal] = useState<ModalState>("none");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const [nextEvent, nextRows] = await Promise.all([
+          getOrganizerEvent(eventId),
+          getOrganizerRegistrations(eventId),
+        ]);
+        if (!cancelled) {
+          setEvent(nextEvent);
+          setRows(nextRows);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : "Não foi possível carregar o evento.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
+
+  async function handleConfirmPresence(registrationId: string) {
+    try {
+      await updateOrganizerRegistrationStatus(eventId, registrationId, "confirmed");
+      setRows((prev) =>
+        prev.map((row) => (row.id === registrationId ? { ...row, status: "confirmed" } : row)),
+      );
+      setSubscriberModal(null);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Não foi possível atualizar a inscrição.");
+      setModal("publish-error");
+    }
+  }
+
+  async function handleCancelRegistration(registrationId: string) {
+    if (!confirm("Cancelar esta inscrição?")) return;
+
+    try {
+      await updateOrganizerRegistrationStatus(eventId, registrationId, "cancelled");
+      setRows((prev) => prev.filter((row) => row.id !== registrationId));
+      setSubscriberModal((current) => (current?.id === registrationId ? null : current));
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Não foi possível cancelar a inscrição.");
+      setModal("publish-error");
+    }
+  }
+
+  async function handleDeleteEvent() {
+    if (!confirm("Excluir este evento? Essa ação não pode ser desfeita.")) return;
+
+    try {
+      await deleteOrganizerEvent(eventId);
+      router.push("/home/meus-eventos");
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Não foi possível excluir o evento.");
+      setModal("publish-error");
+    }
+  }
+
+  function exportCsv() {
+    if (!event) return;
     const header = ["Nome", "Status", "E-mail", "Telefone", "Cidade/UF", "Data de Inscrição"];
     const lines = [header.join(";")];
     for (const r of rows) {
       lines.push(
-        [r.name, r.status, r.email, r.phone, r.cityUf, r.registrationDate].map(csvEscape).join(";"),
+        [
+          r.name,
+          statusLabel(r.status),
+          r.email,
+          r.phone,
+          r.cityUf,
+          new Date(r.registrationDate).toLocaleDateString("pt-BR"),
+        ]
+          .map(csvEscape)
+          .join(";"),
       );
     }
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -32,12 +129,26 @@ export function OrganizerEventDetail({ event }: Props) {
     a.download = `inscritos-${event.id}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [event.id, rows]);
+  }
 
-  function removeSubscriber(id: string) {
-    if (!confirm("Remover este inscrito do evento?")) return;
-    setRows((prev) => prev.filter((r) => r.id !== id));
-    setSubscriberModal((m) => (m?.id === id ? null : m));
+  if (loading) {
+    return (
+      <DashboardShell activeNav="events">
+        <main className="p-4 sm:p-6">
+          <p className="text-sm text-gray-500">Carregando evento...</p>
+        </main>
+      </DashboardShell>
+    );
+  }
+
+  if (!event || error) {
+    return (
+      <DashboardShell activeNav="events">
+        <main className="p-4 sm:p-6">
+          <p className="rounded-xl bg-red-50 px-4 py-8 text-sm text-red-600">{error || "Evento não encontrado."}</p>
+        </main>
+      </DashboardShell>
+    );
   }
 
   return (
@@ -61,18 +172,14 @@ export function OrganizerEventDetail({ event }: Props) {
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
-                className="w-full rounded-lg bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:bg-brand-teal-hover sm:w-auto"
-              >
-                Gerenciar Inscritos
-              </button>
-              <button
-                type="button"
+                onClick={() => setModal("edit")}
                 className="w-full rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600 sm:w-auto"
               >
                 Editar
               </button>
               <button
                 type="button"
+                onClick={() => void handleDeleteEvent()}
                 className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 sm:w-auto"
               >
                 Excluir
@@ -81,22 +188,51 @@ export function OrganizerEventDetail({ event }: Props) {
           </div>
 
           <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-            <div className={`h-48 w-full bg-gradient-to-r ${event.imageClassName} sm:h-56`} />
-            <div className="flex flex-col gap-4 p-4 sm:p-6 sm:flex-row sm:items-start sm:justify-between">
-              <p className="max-w-3xl text-sm leading-relaxed text-gray-700">{event.description}</p>
+            <div className="flex h-48 w-full items-center justify-center bg-gradient-to-r from-teal-600 to-cyan-500 sm:h-56">
+              {event.coverImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={event.coverImageUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-sm text-white/70">Sem capa</span>
+              )}
+            </div>
+            <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+              <div className="max-w-3xl space-y-3 text-sm leading-relaxed text-gray-700">
+                <p>{event.summary}</p>
+                {event.description && <p>{event.description}</p>}
+                <p>
+                  <span className="font-semibold text-gray-900">Data:</span>{" "}
+                  {formatLongDate(event.startsAt)}
+                </p>
+                <p>
+                  <span className="font-semibold text-gray-900">Local:</span>{" "}
+                  {event.isRemote ? "Remoto" : event.locationName ?? "A confirmar"}
+                </p>
+                <p>
+                  <span className="font-semibold text-gray-900">Capacidade:</span>{" "}
+                  {event.capacity ? `${event.capacity} vagas` : "Sem limite"}
+                </p>
+                {event.rulesTerms && (
+                  <p>
+                    <span className="font-semibold text-gray-900">Regras:</span> {event.rulesTerms}
+                  </p>
+                )}
+                {(event.types.length > 0 || event.requirements.length > 0 || event.highlightSkill) && (
+                  <div className="flex flex-wrap gap-2">
+                    {event.highlightSkill && <Badge>{event.highlightSkill}</Badge>}
+                    {event.types.map((item) => (
+                      <Badge key={item.code}>{item.label}</Badge>
+                    ))}
+                    {event.requirements.map((item) => (
+                      <Badge key={item.code}>{item.label}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex flex-shrink-0 flex-col items-start gap-1">
                 <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Status</span>
-                <span
-                  className={[
-                    "inline-flex rounded-full px-3 py-1 text-xs font-semibold",
-                    event.statusLabel === "Encerrado"
-                      ? "bg-gray-100 text-gray-700"
-                      : event.statusLabel === "Em andamento"
-                        ? "bg-amber-100 text-amber-900"
-                        : "bg-green-100 text-green-800",
-                  ].join(" ")}
-                >
-                  {event.statusLabel}
+                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusPill(event.computedStatus)}`}>
+                  {computedStatusLabel(event.computedStatus)}
                 </span>
               </div>
             </div>
@@ -104,7 +240,7 @@ export function OrganizerEventDetail({ event }: Props) {
 
           <section className="rounded-xl border border-gray-100 bg-white shadow-sm">
             <div className="border-b border-gray-100 px-4 py-4 sm:px-6">
-              <h2 className="text-base font-semibold text-brand-teal">Meus Inscritos</h2>
+              <h2 className="text-base font-semibold text-brand-teal">Inscritos</h2>
             </div>
 
             <div className="overflow-x-auto">
@@ -125,23 +261,11 @@ export function OrganizerEventDetail({ event }: Props) {
                     </tr>
                   ) : (
                     rows.map((row, i) => (
-                      <tr
-                        key={row.id}
-                        className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}
-                      >
-                        <td className="px-3 py-3 font-medium text-gray-900 sm:px-6">
-                          {row.name}
-                        </td>
+                      <tr key={row.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+                        <td className="px-3 py-3 font-medium text-gray-900 sm:px-6">{row.name}</td>
                         <td className="px-3 py-3 sm:px-6">
-                          <span
-                            className={[
-                              "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                              row.status === "Confirmado"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-amber-100 text-amber-800",
-                            ].join(" ")}
-                          >
-                            {row.status}
+                          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${registrationPill(row.status)}`}>
+                            {statusLabel(row.status)}
                           </span>
                         </td>
                         <td className="px-3 py-3 sm:px-6">
@@ -156,9 +280,9 @@ export function OrganizerEventDetail({ event }: Props) {
                             </button>
                             <button
                               type="button"
-                              onClick={() => removeSubscriber(row.id)}
+                              onClick={() => void handleCancelRegistration(row.id)}
                               className="rounded-lg p-2 text-red-600 hover:bg-red-50"
-                              aria-label={`Remover ${row.name}`}
+                              aria-label={`Cancelar inscrição de ${row.name}`}
                             >
                               <TrashIcon />
                             </button>
@@ -179,12 +303,6 @@ export function OrganizerEventDetail({ event }: Props) {
               >
                 Exportar CSV
               </button>
-              <button
-                type="button"
-                className="w-full rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600 sm:w-auto"
-              >
-                Adicionar Inscrito
-              </button>
             </div>
           </section>
         </main>
@@ -193,15 +311,38 @@ export function OrganizerEventDetail({ event }: Props) {
           <SubscriberProfileModal
             subscriber={subscriberModal}
             onClose={() => setSubscriberModal(null)}
-            onConfirmPresence={() => {
-              const id = subscriberModal.id;
-              setRows((prev) =>
-                prev.map((r) =>
-                  r.id === id ? { ...r, status: "Confirmado" as const } : r,
-                ),
-              );
-              setSubscriberModal(null);
+            onConfirmPresence={() => void handleConfirmPresence(subscriberModal.id)}
+          />
+        )}
+
+        {modal === "edit" && (
+          <CreateEventModal
+            initialEvent={event}
+            onClose={() => setModal("none")}
+            onSaved={(nextEvent, action) => {
+              setEvent(nextEvent);
+              setModal(action === "published" ? "publish-success" : "none");
             }}
+            onError={(message) => {
+              setActionError(message);
+              setModal("publish-error");
+            }}
+          />
+        )}
+
+        {modal === "publish-success" && (
+          <PublishSuccessModal
+            onClose={() => setModal("none")}
+            eventTitle={event.title}
+            eventDate={new Date(event.startsAt).toLocaleDateString("pt-BR")}
+          />
+        )}
+
+        {modal === "publish-error" && (
+          <PublishErrorModal
+            onClose={() => setModal("none")}
+            onRetry={() => setModal("edit")}
+            message={actionError}
           />
         )}
       </>
@@ -209,9 +350,55 @@ export function OrganizerEventDetail({ event }: Props) {
   );
 }
 
+function statusLabel(status: SubscriberRecord["status"]) {
+  if (status === "confirmed") return "Confirmado";
+  if (status === "cancelled") return "Cancelado";
+  return "Pendente";
+}
+
+function computedStatusLabel(status: OrganizerEventDetailRecord["computedStatus"]) {
+  if (status === "ended") return "Encerrado";
+  if (status === "ongoing") return "Em andamento";
+  if (status === "draft") return "Rascunho";
+  if (status === "cancelled") return "Cancelado";
+  return "Ativo";
+}
+
+function statusPill(status: OrganizerEventDetailRecord["computedStatus"]) {
+  if (status === "ended") return "bg-gray-100 text-gray-700";
+  if (status === "ongoing") return "bg-amber-100 text-amber-900";
+  if (status === "draft") return "bg-sky-100 text-sky-800";
+  if (status === "cancelled") return "bg-red-100 text-red-700";
+  return "bg-green-100 text-green-800";
+}
+
+function registrationPill(status: SubscriberRecord["status"]) {
+  if (status === "confirmed") return "bg-green-100 text-green-800";
+  if (status === "cancelled") return "bg-gray-100 text-gray-700";
+  return "bg-amber-100 text-amber-800";
+}
+
 function csvEscape(value: string) {
   if (/[;"\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
   return value;
+}
+
+function formatLongDate(value: string) {
+  return new Date(value).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function Badge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full bg-brand-teal/10 px-3 py-1 text-xs font-medium text-brand-teal">
+      {children}
+    </span>
+  );
 }
 
 function EyeIcon() {

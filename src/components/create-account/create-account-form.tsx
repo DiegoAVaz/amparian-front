@@ -6,7 +6,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import fundoCreateAccount from "@/assets/fundoCreateAccount.jpg";
-import { registerUser, emailAlreadyRegistered, setAuthCookie } from "@/lib/auth";
+import { ApiError, apiJson } from "@/lib/api";
+import { persistSession, setAuthCookie } from "@/lib/auth";
+
+type RegisterResponse = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  user: {
+    name: string;
+    email: string;
+  };
+};
 
 export function CreateAccountForm() {
   const router = useRouter();
@@ -19,7 +30,7 @@ export function CreateAccountForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
@@ -31,15 +42,34 @@ export function CreateAccountForm() {
       setError("Você precisa aceitar os termos de uso.");
       return;
     }
-    if (emailAlreadyRegistered(email)) {
-      setError("Este email já está cadastrado.");
-      return;
-    }
 
     setLoading(true);
-    registerUser({ name, email, phone, password });
-    setAuthCookie(name);
-    router.push("/home");
+    try {
+      const data = await apiJson<RegisterResponse>("/auth/register", {
+        method: "POST",
+        json: {
+          email,
+          password,
+          name,
+          ...(phone.trim() ? { phone: phone.trim() } : {}),
+        },
+        auth: false,
+      });
+
+      persistSession(
+        { accessToken: data.accessToken, refreshToken: data.refreshToken },
+        { name: data.user.name, email: data.user.email },
+      );
+      setAuthCookie(data.user.name);
+      router.push("/home");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Não foi possível conectar. Verifique se a API está rodando.");
+      }
+      setLoading(false);
+    }
   }
 
   const inputCls =

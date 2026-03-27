@@ -1,16 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { type OrganizerEventDetail, type OrganizerEventSummary, getOrganizerEvents } from "@/lib/amparian-api";
+import { ApiError } from "@/lib/api";
 import { CreateEventModal } from "@/components/dashboard/create-event-modal";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { PublishErrorModal } from "@/components/dashboard/publish-error-modal";
 import { PublishSuccessModal } from "@/components/dashboard/publish-success-modal";
 
-import type { EventTimeFilter } from "./my-events-data";
-import { listOrganizerEvents } from "./my-events-data";
-
+type EventTimeFilter = "upcoming" | "past" | "ongoing";
 type ModalState = "none" | "create-event" | "publish-success" | "publish-error";
 
 const TABS: { id: EventTimeFilter; label: string }[] = [
@@ -23,14 +23,55 @@ export function MyEventsList() {
   const [tab, setTab] = useState<EventTimeFilter>("upcoming");
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState<ModalState>("none");
+  const [events, setEvents] = useState<OrganizerEventSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [savedEvent, setSavedEvent] = useState<OrganizerEventDetail | null>(null);
+  const [publishError, setPublishError] = useState("");
 
-  const events = useMemo(() => listOrganizerEvents(tab), [tab]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const nextEvents = await getOrganizerEvents(tab);
+        if (!cancelled) setEvents(nextEvents);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : "Não foi possível carregar seus eventos.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [tab]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return events;
     return events.filter((e) => e.title.toLowerCase().includes(q));
   }, [events, query]);
+
+  function handleSaved(event: OrganizerEventDetail, action: "draft" | "published") {
+    setSavedEvent(event);
+    setModal(action === "published" ? "publish-success" : "none");
+    void refreshEvents();
+  }
+
+  async function refreshEvents() {
+    try {
+      setEvents(await getOrganizerEvents(tab));
+    } catch {
+      /* keep current state */
+    }
+  }
 
   return (
     <DashboardShell activeNav="events">
@@ -57,9 +98,7 @@ export function MyEventsList() {
                   onClick={() => setTab(t.id)}
                   className={[
                     "relative px-4 pb-3 text-sm font-medium transition-colors",
-                    tab === t.id
-                      ? "text-brand-teal"
-                      : "text-gray-500 hover:text-gray-700",
+                    tab === t.id ? "text-brand-teal" : "text-gray-500 hover:text-gray-700",
                   ].join(" ")}
                 >
                   {t.label}
@@ -82,7 +121,15 @@ export function MyEventsList() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <p className="rounded-xl bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm">
+              Carregando eventos...
+            </p>
+          ) : error ? (
+            <p className="rounded-xl bg-red-50 px-4 py-8 text-center text-sm text-red-600 shadow-sm">
+              {error}
+            </p>
+          ) : filtered.length === 0 ? (
             <EmptyEventsState />
           ) : (
             <div className="flex flex-col gap-4">
@@ -98,6 +145,9 @@ export function MyEventsList() {
                   <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-semibold text-brand-teal">{event.title}</h2>
+                      <p className="text-xs text-gray-500">
+                        {new Date(event.startsAt).toLocaleDateString("pt-BR")} • {event.statusLabel}
+                      </p>
                     </div>
                     <Link
                       href={`/home/meus-eventos/${event.id}`}
@@ -115,17 +165,26 @@ export function MyEventsList() {
         {modal === "create-event" && (
           <CreateEventModal
             onClose={() => setModal("none")}
-            onPublish={() => setModal("publish-success")}
-            onError={() => setModal("publish-error")}
+            onSaved={handleSaved}
+            onError={(message) => {
+              setPublishError(message);
+              setModal("publish-error");
+            }}
           />
         )}
         {modal === "publish-success" && (
-          <PublishSuccessModal onClose={() => setModal("none")} />
+          <PublishSuccessModal
+            onClose={() => setModal("none")}
+            eventTitle={savedEvent?.title}
+            eventDate={savedEvent ? new Date(savedEvent.startsAt).toLocaleDateString("pt-BR") : null}
+            onViewEvent={() => (savedEvent ? (window.location.href = `/home/meus-eventos/${savedEvent.id}`) : undefined)}
+          />
         )}
         {modal === "publish-error" && (
           <PublishErrorModal
             onClose={() => setModal("none")}
             onRetry={() => setModal("create-event")}
+            message={publishError}
           />
         )}
       </>
@@ -158,8 +217,7 @@ function EmptyEventsState() {
       <div className="max-w-md space-y-2">
         <p className="text-base font-semibold text-brand-teal">Nenhum evento por aqui</p>
         <p className="text-sm text-gray-600">
-          Não há eventos para mostrar nesta aba. Que tal criar um novo evento ou conferir outro
-          período?
+          Não há eventos para mostrar nesta aba. Que tal criar um novo evento ou conferir outro período?
         </p>
       </div>
       <MascotIllustration />
@@ -184,13 +242,7 @@ function MascotIllustration() {
         <circle cx="75" cy="55" r="6" fill="white" />
         <circle cx="47" cy="56" r="3" fill="#064e3b" />
         <circle cx="77" cy="56" r="3" fill="#064e3b" />
-        <path
-          d="M48 78c8 6 16 6 24 0"
-          stroke="white"
-          strokeWidth="3"
-          strokeLinecap="round"
-          fill="none"
-        />
+        <path d="M48 78c8 6 16 6 24 0" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
         <ellipse cx="60" cy="105" rx="18" ry="10" fill="#34d399" opacity="0.5" />
       </svg>
     </div>
