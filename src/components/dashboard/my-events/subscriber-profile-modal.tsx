@@ -1,6 +1,6 @@
 "use client";
 
-import type { SubscriberRecord } from "./my-events-data";
+import type { SubscriberRecord } from "@/lib/amparian-api";
 
 type Props = {
   subscriber: SubscriberRecord;
@@ -27,7 +27,7 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
         </button>
 
         <h2 id="modal-perfil-titulo" className="text-lg font-bold text-brand-teal">
-          Perfil do Inscrito
+          Perfil do inscrito
         </h2>
 
         <div className="mt-6 flex flex-col items-center gap-4 border-b border-gray-100 pb-6 sm:flex-row sm:items-start">
@@ -40,39 +40,18 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
           </div>
           <div className="flex flex-1 flex-col items-center text-center sm:items-start sm:text-left">
             <p className="text-base font-semibold text-gray-900">{subscriber.name}</p>
-            <p className="text-sm text-gray-500">{subscriber.role}</p>
-            <span
-              className={[
-                "mt-2 inline-flex rounded-full px-3 py-0.5 text-xs font-semibold",
-                subscriber.status === "Confirmado"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-amber-100 text-amber-800",
-              ].join(" ")}
-            >
-              {subscriber.status}
+            <p className="text-sm text-gray-500">{subscriber.role || "Voluntário"}</p>
+            <span className={`mt-2 inline-flex rounded-full px-3 py-0.5 text-xs font-semibold ${statusCls(subscriber.status)}`}>
+              {statusLabel(subscriber.status)}
             </span>
           </div>
         </div>
 
         <dl className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">E-mail</dt>
-            <dd className="mt-1 text-sm text-gray-800">{subscriber.email}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Telefone</dt>
-            <dd className="mt-1 text-sm text-gray-800">{subscriber.phone}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">Cidade/UF</dt>
-            <dd className="mt-1 text-sm text-gray-800">{subscriber.cityUf}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">
-              Data de Inscrição
-            </dt>
-            <dd className="mt-1 text-sm text-gray-800">{subscriber.registrationDate}</dd>
-          </div>
+          <Field label="E-mail" value={subscriber.email} />
+          <Field label="Telefone" value={subscriber.phone || "Não informado"} />
+          <Field label="Cidade/UF" value={subscriber.cityUf || "Não informado"} />
+          <Field label="Data de inscrição" value={formatDate(subscriber.registrationDate)} />
         </dl>
 
         <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
@@ -83,17 +62,44 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
           >
             Fechar
           </button>
-          <button
-            type="button"
-            onClick={onConfirmPresence}
-            className="w-full rounded-lg bg-green-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-600 sm:w-auto"
-          >
-            Confirmar Presença
-          </button>
+          {subscriber.status !== "confirmed" && (
+            <button
+              type="button"
+              onClick={onConfirmPresence}
+              className="w-full rounded-lg bg-green-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-600 sm:w-auto"
+            >
+              Confirmar presença
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</dt>
+      <dd className="mt-1 text-sm text-gray-800">{value}</dd>
+    </div>
+  );
+}
+
+function statusLabel(status: SubscriberRecord["status"]) {
+  if (status === "confirmed") return "Confirmado";
+  if (status === "cancelled") return "Cancelado";
+  return "Pendente";
+}
+
+function statusCls(status: SubscriberRecord["status"]) {
+  if (status === "confirmed") return "bg-green-100 text-green-800";
+  if (status === "cancelled") return "bg-gray-100 text-gray-700";
+  return "bg-amber-100 text-amber-800";
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString("pt-BR");
 }
 
 function XIcon() {

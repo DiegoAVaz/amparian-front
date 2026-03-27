@@ -1,8 +1,20 @@
 "use client";
 
-type Props = { onClose: () => void };
+type Props = {
+  onClose: () => void;
+  eventTitle?: string;
+  eventOrg?: string;
+  eventDate?: string | null;
+  onViewEvent?: () => void;
+};
 
-export function PublishSuccessModal({ onClose }: Props) {
+export function PublishSuccessModal({
+  onClose,
+  eventTitle,
+  eventOrg,
+  eventDate,
+  onViewEvent,
+}: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
       <div className="relative max-h-[92dvh] w-full max-w-sm overflow-y-auto rounded-t-2xl bg-white p-5 text-center shadow-xl sm:rounded-2xl sm:p-8">
@@ -15,27 +27,25 @@ export function PublishSuccessModal({ onClose }: Props) {
           <XIcon />
         </button>
 
-        <h2 className="text-xl font-bold text-brand-teal">Tudo pronto, Bianca! 🎉</h2>
+        <h2 className="text-xl font-bold text-brand-teal">Seu evento foi publicado!</h2>
         <p className="mt-1 text-sm font-semibold text-brand-teal">
           Seu evento foi publicado com sucesso!
         </p>
 
-        {/* Event preview card */}
         <div className="my-5 flex overflow-hidden rounded-xl bg-gray-100 text-left shadow-sm">
-          {/* Imagem — adicionar src/assets/eventoMutirao.jpg */}
-          <div className="w-20 flex-shrink-0 bg-gray-300 flex items-center justify-center">
-            <span className="text-[8px] text-gray-400 text-center px-1">evento.jpg</span>
+          <div className="flex w-20 flex-shrink-0 items-center justify-center bg-gray-300">
+            <span className="px-1 text-center text-[8px] text-gray-400">evento.jpg</span>
           </div>
           <div className="flex flex-col justify-center gap-0.5 px-3 py-2">
-            <p className="text-sm font-semibold text-brand-teal">Mutirão de limpeza</p>
-            <p className="text-xs text-gray-400">Bianca Lello</p>
-            <p className="text-xs text-gray-400">22 de maio</p>
+            <p className="text-sm font-semibold text-brand-teal">{eventTitle ?? "Novo evento"}</p>
+            <p className="text-xs text-gray-400">{eventOrg ?? "Amparian"}</p>
+            <p className="text-xs text-gray-400">{eventDate ?? "Publicado agora"}</p>
           </div>
         </div>
 
         <p className="text-xs leading-relaxed text-gray-600">
-          Obrigado por ajudar a transformar o mundo! Seu evento já está disponível na Home para
-          todos os voluntários da Amparian.
+          Obrigado por ajudar a transformar o mundo! Seu evento já está disponível para outros
+          voluntários da Amparian.
         </p>
 
         <div className="mt-4 flex flex-col items-center gap-3">
@@ -61,6 +71,7 @@ export function PublishSuccessModal({ onClose }: Props) {
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:gap-3">
           <button
             type="button"
+            onClick={onViewEvent}
             className="w-full flex-1 rounded-lg bg-brand-teal py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover sm:w-auto"
           >
             Ver meu evento
@@ -70,7 +81,7 @@ export function PublishSuccessModal({ onClose }: Props) {
             onClick={onClose}
             className="w-full flex-1 rounded-lg border border-brand-teal py-2.5 text-sm font-semibold text-brand-teal transition-colors hover:bg-brand-teal/5 sm:w-auto"
           >
-            Voltar para home
+            Voltar
           </button>
         </div>
       </div>
@@ -80,7 +91,15 @@ export function PublishSuccessModal({ onClose }: Props) {
 
 function XIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -98,7 +117,16 @@ function WhatsAppIcon() {
 
 function InstagramIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
       <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
       <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />

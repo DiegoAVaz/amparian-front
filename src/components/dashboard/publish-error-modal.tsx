@@ -3,9 +3,10 @@
 type Props = {
   onClose: () => void;
   onRetry: () => void;
+  message?: string;
 };
 
-export function PublishErrorModal({ onClose, onRetry }: Props) {
+export function PublishErrorModal({ onClose, onRetry, message }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
       <div className="relative max-h-[92dvh] w-full max-w-sm overflow-y-auto rounded-t-2xl bg-white p-5 text-center shadow-xl sm:rounded-2xl sm:p-8">
@@ -18,16 +19,14 @@ export function PublishErrorModal({ onClose, onRetry }: Props) {
           <XIcon />
         </button>
 
-        <h2 className="text-xl font-bold text-brand-teal">
-          Ops, algo deu errado, Bianca! 😕
-        </h2>
+        <h2 className="text-xl font-bold text-brand-teal">Ops, algo deu errado</h2>
         <p className="mt-1 text-sm font-semibold text-brand-teal">
           Não conseguimos publicar o seu evento no momento.
         </p>
 
         <p className="mt-4 text-xs leading-relaxed text-gray-600">
-          Infelizmente, tivemos um problema técnico ao processar as informações. Verifique se todos
-          os campos estão preenchidos corretamente e tente novamente.
+          {message ??
+            "Tivemos um problema ao processar as informações. Verifique os campos e tente novamente."}
         </p>
 
         <div className="mt-6 flex flex-col items-center gap-3">
@@ -52,7 +51,15 @@ export function PublishErrorModal({ onClose, onRetry }: Props) {
 
 function XIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>

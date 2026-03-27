@@ -1,45 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import { type AgendaItem, getAgenda } from "@/lib/amparian-api";
+import { ApiError } from "@/lib/api";
 
 import { DashboardShell } from "./dashboard-shell";
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-
-const AGENDA_EVENTS = [
-  {
-    id: "1",
-    title: "Mutirão de limpeza",
-    org: "Ong Guardiões do BEM",
-    dayLabel: "07 de abril",
-    imageClass: "from-teal-600 to-cyan-500",
-  },
-  {
-    id: "2",
-    title: "Instrutor Voluntário",
-    org: "Ong Saúde+",
-    dayLabel: "24 de abril",
-    imageClass: "from-emerald-600 to-teal-400",
-  },
-  {
-    id: "3",
-    title: "Reunião de captação",
-    org: "Amparian",
-    dayLabel: "27 de abril",
-    imageClass: "from-sky-600 to-blue-400",
-  },
-  {
-    id: "4",
-    title: "Workshop de voluntariado",
-    org: "Ong Guardiões do BEM",
-    dayLabel: "29 de abril",
-    imageClass: "from-amber-600 to-orange-500",
-  },
-];
-
-/** Dias com evento em abril/2026 (apenas para o mock do Figma) */
-const EVENT_DAYS_APR_2026 = new Set([7, 24, 27, 29]);
 
 function useCalendarCells(year: number, month: number) {
   return useMemo(() => {
@@ -64,8 +32,11 @@ function useCalendarCells(year: number, month: number) {
 }
 
 export function AgendaContent() {
-  const now = new Date(2026, 3, 1);
+  const now = new Date();
   const [cursor, setCursor] = useState({ y: now.getFullYear(), m: now.getMonth() });
+  const [events, setEvents] = useState<AgendaItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const cells = useCalendarCells(cursor.y, cursor.m);
   const monthLabel = new Date(cursor.y, cursor.m, 1).toLocaleDateString("pt-BR", {
@@ -75,9 +46,41 @@ export function AgendaContent() {
   const monthNameCap = capitalize(
     new Date(cursor.y, cursor.m, 1).toLocaleDateString("pt-BR", { month: "long" }),
   );
-  const isApril2026 = cursor.y === 2026 && cursor.m === 3;
-  const visibleEvents = isApril2026 ? AGENDA_EVENTS : [];
-  const eventCountThisMonth = visibleEvents.length;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAgenda() {
+      setLoading(true);
+      setError("");
+      try {
+        const nextEvents = await getAgenda(cursor.y, cursor.m + 1);
+        if (!cancelled) setEvents(nextEvents);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : "Não foi possível carregar a agenda.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadAgenda();
+    return () => {
+      cancelled = true;
+    };
+  }, [cursor.y, cursor.m]);
+
+  const eventDays = useMemo(
+    () =>
+      new Set(
+        events.map((event) => {
+          const date = new Date(event.startsAt);
+          return date.getDate();
+        }),
+      ),
+    [events],
+  );
 
   function prevMonth() {
     setCursor((c) => {
@@ -95,7 +98,7 @@ export function AgendaContent() {
 
   function isEventDay(day: number, inMonth: boolean) {
     if (!inMonth) return false;
-    return cursor.y === 2026 && cursor.m === 3 && EVENT_DAYS_APR_2026.has(day);
+    return eventDays.has(day);
   }
 
   return (
@@ -106,42 +109,46 @@ export function AgendaContent() {
         <div className="flex flex-1 flex-col gap-6 xl:flex-row">
           <div className="flex min-w-0 flex-1 flex-col gap-4">
             <p className="text-sm text-gray-700">
-              Você tem{" "}
-              <span className="font-semibold text-brand-teal">{eventCountThisMonth}</span> eventos no
+              Você tem <span className="font-semibold text-brand-teal">{events.length}</span> eventos no
               mês de {monthNameCap}.
             </p>
 
-            <div className="flex flex-col gap-3">
-              {visibleEvents.length === 0 && (
-                <p className="rounded-xl border border-dashed border-gray-200 bg-white/80 px-4 py-8 text-center text-sm text-gray-500">
-                  Nenhum evento listado para este mês.
-                </p>
-              )}
-              {visibleEvents.map((ev) => (
-                <div
-                  key={ev.id}
-                  className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm sm:flex-row"
-                >
+            {loading ? (
+              <p className="rounded-xl border border-gray-100 bg-white px-4 py-8 text-center text-sm text-gray-500">
+                Carregando agenda...
+              </p>
+            ) : error ? (
+              <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-8 text-center text-sm text-red-600">
+                {error}
+              </p>
+            ) : events.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-gray-200 bg-white/80 px-4 py-8 text-center text-sm text-gray-500">
+                Nenhum evento listado para este mês.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {events.map((ev, index) => (
                   <div
-                    className={`h-32 w-full flex-shrink-0 bg-gradient-to-br sm:h-32 sm:w-44 ${ev.imageClass}`}
-                    aria-hidden
-                  />
-                  <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-gray-900">{ev.title}</p>
-                      <p className="text-sm text-gray-500">{ev.org}</p>
-                      <p className="text-xs text-gray-400">{ev.dayLabel}</p>
+                    key={ev.eventId}
+                    className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm sm:flex-row"
+                  >
+                    <div
+                      className={`h-32 w-full flex-shrink-0 bg-gradient-to-br sm:h-32 sm:w-44 ${
+                        index % 2 === 0 ? "from-teal-600 to-cyan-500" : "from-emerald-600 to-teal-400"
+                      }`}
+                      aria-hidden
+                    />
+                    <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900">{ev.title}</p>
+                        <p className="text-sm text-gray-500">{ev.org}</p>
+                        <p className="text-xs text-gray-400">{ev.dayLabel}</p>
+                      </div>
                     </div>
-                    <Link
-                      href="/home/em-breve"
-                      className="inline-flex w-full flex-shrink-0 items-center justify-center rounded-lg bg-brand-teal px-4 py-2 text-xs font-semibold text-white hover:bg-brand-teal-hover sm:w-auto"
-                    >
-                      Ver detalhes
-                    </Link>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="w-full flex-shrink-0 xl:w-[380px]">

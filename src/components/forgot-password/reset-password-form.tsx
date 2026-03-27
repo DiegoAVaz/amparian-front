@@ -1,24 +1,49 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 
 import forgotPassPt1 from "@/assets/forgotPassPt1.jpg";
+import { ApiError, apiJson } from "@/lib/api";
 
 export function ResetPasswordForm() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const search = useSyncExternalStore(subscribeToLocation, getClientSearch, () => "");
+  const token = new URLSearchParams(search).get("token") ?? "";
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (password !== confirm) {
       setError("As senhas não coincidem.");
       return;
     }
-    router.push("/login");
+    if (!token.trim()) {
+      setError("Link inválido ou expirado. Solicite um novo e-mail de recuperação.");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+    try {
+      await apiJson("/auth/reset-password", {
+        method: "POST",
+        json: { token: token.trim(), newPassword: password },
+        auth: false,
+      });
+      router.push("/login");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Não foi possível atualizar. Verifique se a API está rodando.");
+      }
+      setLoading(false);
+    }
   }
 
   const inputCls =
@@ -55,6 +80,7 @@ export function ResetPasswordForm() {
             placeholder="Digite nova senha"
             autoComplete="new-password"
             required
+            minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={inputCls}
@@ -64,6 +90,7 @@ export function ResetPasswordForm() {
             placeholder="Digite senha novamente"
             autoComplete="new-password"
             required
+            minLength={6}
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             className={inputCls}
@@ -77,14 +104,24 @@ export function ResetPasswordForm() {
 
           <button
             type="submit"
-            className="mt-1 w-full rounded-lg bg-brand-teal py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+            disabled={loading}
+            className="mt-1 w-full rounded-lg bg-brand-teal py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
           >
-            Atualizar senha
+            {loading ? "Atualizando..." : "Atualizar senha"}
           </button>
         </form>
       </div>
     </section>
   );
+}
+
+function subscribeToLocation(onStoreChange: () => void) {
+  window.addEventListener("popstate", onStoreChange);
+  return () => window.removeEventListener("popstate", onStoreChange);
+}
+
+function getClientSearch() {
+  return window.location.search;
 }
 
 function ShieldIcon() {

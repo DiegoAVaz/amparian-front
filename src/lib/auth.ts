@@ -1,50 +1,44 @@
-export type MockUser = {
-  name: string;
-  email: string;
-  phone: string;
-  password: string;
-};
+import { apiJson } from "@/lib/api";
 
-const USERS_KEY = "amparian_users";
+import { clearSessionStorage, getRefreshToken } from "./auth/session";
 
-// ── Cookie helpers (client-side only) ────────────────────────
+export type { StoredUser } from "./auth/session";
+export {
+  clearSessionStorage,
+  getAccessToken,
+  getRefreshToken,
+  getStoredUser,
+  persistSession,
+  updateStoredUser,
+} from "./auth/session";
 
-export function setAuthCookie(name: string) {
-  const maxAge = 60 * 60 * 24 * 7; // 7 days
-  document.cookie = `amparian_auth=${encodeURIComponent(name)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+/** Cookie lido pelo middleware para proteger /home (presença de sessão). */
+export function setAuthCookie(displayName: string) {
+  const maxAge = 60 * 60 * 24 * 7;
+  document.cookie = `amparian_auth=${encodeURIComponent(displayName)}; path=/; max-age=${maxAge}; SameSite=Lax`;
 }
 
 export function clearAuthCookie() {
   document.cookie = "amparian_auth=; path=/; max-age=0";
 }
 
-// ── Mock user store (localStorage) ───────────────────────────
-
-export function registerUser(user: MockUser): void {
-  const users = getStoredUsers();
-  users.push(user);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+/** Remove tokens, dados locais e cookie de sessão (logout completo). */
+export function clearSession() {
+  clearSessionStorage();
+  clearAuthCookie();
 }
 
-export function findUser(email: string, password: string): MockUser | null {
-  // Usuário padrão para testes
-  if (email === "bianca@exemplo.com" && password === "123456") {
-    return { name: "Bianca Lello", email, phone: "", password };
-  }
-  return getStoredUsers().find((u) => u.email === email && u.password === password) ?? null;
-}
-
-export function emailAlreadyRegistered(email: string): boolean {
-  if (email === "bianca@exemplo.com") return true;
-  return getStoredUsers().some((u) => u.email === email);
-}
-
-function getStoredUsers(): MockUser[] {
-  if (typeof window === "undefined") return [];
+/** Revoga refresh na API (se possível) e limpa sessão local. */
+export async function logoutAndClear(): Promise<void> {
+  const refresh = getRefreshToken();
   try {
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? (JSON.parse(raw) as MockUser[]) : [];
+    await apiJson("/auth/logout", {
+      method: "POST",
+      json: refresh ? { refreshToken: refresh } : {},
+      auth: false,
+    });
   } catch {
-    return [];
+    /* falha de rede: ainda assim encerra sessão local */
   }
+  clearSession();
 }
