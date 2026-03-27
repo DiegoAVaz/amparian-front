@@ -6,14 +6,33 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import forgotPassPt1 from "@/assets/forgotPassPt1.jpg";
+import { ApiError, apiJson } from "@/lib/api";
 
 export function ForgotPasswordForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    router.push("/esqueci-minha-senha/redefinir");
+    setError("");
+    setLoading(true);
+    try {
+      await apiJson("/auth/forgot-password", {
+        method: "POST",
+        json: { email },
+        auth: false,
+      });
+      router.push("/esqueci-minha-senha/redefinir");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Não foi possível enviar. Verifique se a API está rodando.");
+      }
+      setLoading(false);
+    }
   }
 
   return (
@@ -52,11 +71,18 @@ export function ForgotPasswordForm() {
             className="w-full rounded-lg border border-transparent bg-white/80 px-4 py-3 text-sm text-gray-700 placeholder-gray-500 outline-none focus:border-brand-teal focus:bg-white focus:ring-1 focus:ring-brand-teal"
           />
 
+          {error && (
+            <p className="rounded-lg bg-red-50/80 px-3 py-2 text-center text-xs font-medium text-red-600">
+              {error}
+            </p>
+          )}
+
           <button
             type="submit"
-            className="w-full rounded-lg bg-brand-teal py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+            disabled={loading}
+            className="w-full rounded-lg bg-brand-teal py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
           >
-            Enviar link de recuperação
+            {loading ? "Enviando..." : "Enviar link de recuperação"}
           </button>
         </form>
 

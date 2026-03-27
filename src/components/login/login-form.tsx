@@ -2,11 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 
 import fundoLogin from "@/assets/fundoLogin.png";
-import { findUser, setAuthCookie } from "@/lib/auth";
+import { ApiError, apiJson } from "@/lib/api";
+import { persistSession, setAuthCookie } from "@/lib/auth";
+
+type LoginResponse = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  user: {
+    name: string;
+    email: string;
+  };
+};
 
 export function LoginForm() {
   const router = useRouter();
@@ -14,22 +25,36 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const search = useSyncExternalStore(subscribeToLocation, getClientSearch, () => "");
+  const sessionExpired = new URLSearchParams(search).get("reason") === "session-expired";
+  const message = error || (sessionExpired ? "Sua sessão expirou. Faça login novamente." : "");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const user = findUser(email, password);
+    try {
+      const data = await apiJson<LoginResponse>("/auth/login", {
+        method: "POST",
+        json: { email, password },
+        auth: false,
+      });
 
-    if (!user) {
-      setError("Email ou senha incorretos.");
+      persistSession(
+        { accessToken: data.accessToken, refreshToken: data.refreshToken },
+        { name: data.user.name, email: data.user.email },
+      );
+      setAuthCookie(data.user.name);
+      router.push("/home");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Não foi possível conectar. Verifique se a API está rodando.");
+      }
       setLoading(false);
-      return;
     }
-
-    setAuthCookie(user.name);
-    router.push("/home");
   }
 
   return (
@@ -72,9 +97,9 @@ export function LoginForm() {
             className="w-full rounded-lg border border-transparent bg-white/80 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-brand-teal focus:bg-white focus:ring-1 focus:ring-brand-teal"
           />
 
-          {error && (
+          {message && (
             <p className="rounded-lg bg-red-50/80 px-3 py-2 text-center text-xs font-medium text-red-600">
-              {error}
+              {message}
             </p>
           )}
 
@@ -99,6 +124,15 @@ export function LoginForm() {
       </div>
     </section>
   );
+}
+
+function subscribeToLocation(onStoreChange: () => void) {
+  window.addEventListener("popstate", onStoreChange);
+  return () => window.removeEventListener("popstate", onStoreChange);
+}
+
+function getClientSearch() {
+  return window.location.search;
 }
 
 function ShieldIcon() {
