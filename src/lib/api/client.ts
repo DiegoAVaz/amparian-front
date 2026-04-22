@@ -43,7 +43,8 @@ async function parseJsonError(res: Response): Promise<never> {
 
 function clearAuthCookie(): void {
   if (typeof document === "undefined") return;
-  document.cookie = "amparian_auth=; path=/; max-age=0";
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `amparian_auth=; path=/; max-age=0; SameSite=Lax${secure}`;
 }
 
 function redirectToLogin(): void {
@@ -97,6 +98,7 @@ async function refreshAccessToken(): Promise<string | null> {
       const base = getApiBaseUrl();
       const res = await fetch(`${base}/api/v1/auth/refresh`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
       });
@@ -134,6 +136,7 @@ export async function apiFetch(
   const url = `${base}/api/v1${path.startsWith("/") ? path : `/${path}`}`;
   const res = await fetch(url, {
     ...rest,
+    credentials: rest.credentials ?? "include",
     headers,
     body,
   });
@@ -147,12 +150,17 @@ export async function apiFetch(
         retryHeaders.set("Authorization", `Bearer ${nextAccess}`);
         const retryRes = await fetch(url, {
           ...rest,
+          credentials: rest.credentials ?? "include",
           headers: retryHeaders,
           body,
         });
+        if (retryRes.status === 401) {
+          clearSessionAndRedirect();
+        }
         if (!retryRes.ok) await parseJsonError(retryRes);
         return retryRes;
       }
+      clearSessionAndRedirect();
     }
   }
 

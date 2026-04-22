@@ -8,6 +8,7 @@ export {
   getAccessToken,
   getRefreshToken,
   getStoredUser,
+  persistUser,
   persistSession,
   updateStoredUser,
 } from "./auth/session";
@@ -15,11 +16,13 @@ export {
 /** Cookie lido pelo middleware para proteger /home (presença de sessão). */
 export function setAuthCookie(displayName: string) {
   const maxAge = 60 * 60 * 24 * 7;
-  document.cookie = `amparian_auth=${encodeURIComponent(displayName)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `amparian_auth=${encodeURIComponent(displayName)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
 }
 
 export function clearAuthCookie() {
-  document.cookie = "amparian_auth=; path=/; max-age=0";
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `amparian_auth=; path=/; max-age=0; SameSite=Lax${secure}`;
 }
 
 /** Remove tokens, dados locais e cookie de sessão (logout completo). */

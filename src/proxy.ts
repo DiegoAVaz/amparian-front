@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 const PROTECTED_PATHS = ["/home"];
 const GUEST_ONLY_PATHS = ["/login", "/criar-conta", "/esqueci-minha-senha"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const auth = request.cookies.get("amparian_auth")?.value;
   const { pathname } = request.nextUrl;
 

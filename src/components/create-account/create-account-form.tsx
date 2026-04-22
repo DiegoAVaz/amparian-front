@@ -7,12 +7,12 @@ import { useRouter } from "next/navigation";
 
 import fundoCreateAccount from "@/assets/fundoCreateAccount.jpg";
 import { ApiError, apiJson } from "@/lib/api";
-import { persistSession, setAuthCookie } from "@/lib/auth";
+import { persistSession, persistUser, setAuthCookie } from "@/lib/auth";
 
 type RegisterResponse = {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
   user: {
     name: string;
     email: string;
@@ -56,10 +56,14 @@ export function CreateAccountForm() {
         auth: false,
       });
 
-      persistSession(
-        { accessToken: data.accessToken, refreshToken: data.refreshToken },
-        { name: data.user.name, email: data.user.email },
-      );
+      if (data.accessToken && data.refreshToken) {
+        persistSession(
+          { accessToken: data.accessToken, refreshToken: data.refreshToken },
+          { name: data.user.name, email: data.user.email },
+        );
+      } else {
+        persistUser({ name: data.user.name, email: data.user.email });
+      }
       setAuthCookie(data.user.name);
       router.push("/home");
     } catch (err) {
