@@ -26,8 +26,13 @@ export function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const search = useSyncExternalStore(subscribeToLocation, getClientSearch, () => "");
-  const sessionExpired = new URLSearchParams(search).get("reason") === "session-expired";
-  const message = error || (sessionExpired ? "Sua sessão expirou. Faça login novamente." : "");
+  const reason = new URLSearchParams(search).get("reason");
+  const reasonMessage = reason === "session-expired"
+    ? "Sua sessão expirou. Faça login novamente."
+    : reason === "session-required"
+      ? "Faça login para continuar."
+      : "";
+  const message = error || reasonMessage;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
