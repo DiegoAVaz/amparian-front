@@ -7,12 +7,9 @@ import { useRouter } from "next/navigation";
 
 import fundoCreateAccount from "@/assets/fundoCreateAccount.jpg";
 import { ApiError, apiJson } from "@/lib/api";
-import { persistSession, persistUser, setAuthCookie } from "@/lib/auth";
+import { persistUser, setAuthCookie } from "@/lib/auth";
 
 type RegisterResponse = {
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
   user: {
     name: string;
     email: string;
@@ -56,14 +53,7 @@ export function CreateAccountForm() {
         auth: false,
       });
 
-      if (data.accessToken && data.refreshToken) {
-        persistSession(
-          { accessToken: data.accessToken, refreshToken: data.refreshToken },
-          { name: data.user.name, email: data.user.email },
-        );
-      } else {
-        persistUser({ name: data.user.name, email: data.user.email });
-      }
+      persistUser({ name: data.user.name, email: data.user.email });
       setAuthCookie(data.user.name);
       router.push("/home");
     } catch (err) {

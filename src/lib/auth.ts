@@ -1,15 +1,12 @@
 import { apiJson } from "@/lib/api";
 
-import { clearSessionStorage, getRefreshToken } from "./auth/session";
+import { clearSessionStorage } from "./auth/session";
 
 export type { StoredUser } from "./auth/session";
 export {
   clearSessionStorage,
-  getAccessToken,
-  getRefreshToken,
   getStoredUser,
   persistUser,
-  persistSession,
   updateStoredUser,
 } from "./auth/session";
 
@@ -33,11 +30,9 @@ export function clearSession() {
 
 /** Revoga refresh na API (se possível) e limpa sessão local. */
 export async function logoutAndClear(): Promise<void> {
-  const refresh = getRefreshToken();
   try {
     await apiJson("/auth/logout", {
       method: "POST",
-      json: refresh ? { refreshToken: refresh } : {},
       auth: false,
     });
   } catch {

@@ -6,9 +6,8 @@ const GUEST_ONLY_PATHS = ["/login", "/criar-conta", "/esqueci-minha-senha"];
 
 export function proxy(request: NextRequest) {
   const auth = request.cookies.get("amparian_auth")?.value;
-  const access = request.cookies.get("amparian_access_token")?.value;
   const { pathname } = request.nextUrl;
-  const hasSession = Boolean(auth && access);
+  const hasSession = Boolean(auth);
 
   const isProtected = PROTECTED_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),

@@ -7,12 +7,9 @@ import { useRouter } from "next/navigation";
 
 import fundoLogin from "@/assets/fundoLogin.png";
 import { ApiError, apiJson } from "@/lib/api";
-import { persistSession, persistUser, setAuthCookie } from "@/lib/auth";
+import { persistUser, setAuthCookie } from "@/lib/auth";
 
 type LoginResponse = {
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
   user: {
     name: string;
     email: string;
@@ -46,14 +43,7 @@ export function LoginForm() {
         auth: false,
       });
 
-      if (data.accessToken && data.refreshToken) {
-        persistSession(
-          { accessToken: data.accessToken, refreshToken: data.refreshToken },
-          { name: data.user.name, email: data.user.email },
-        );
-      } else {
-        persistUser({ name: data.user.name, email: data.user.email });
-      }
+      persistUser({ name: data.user.name, email: data.user.email });
       setAuthCookie(data.user.name);
       router.push("/home");
     } catch (err) {
