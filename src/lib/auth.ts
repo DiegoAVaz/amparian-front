@@ -10,22 +10,9 @@ export {
   updateStoredUser,
 } from "./auth/session";
 
-/** Cookie lido pelo middleware para proteger /home (presença de sessão). */
-export function setAuthCookie(displayName: string) {
-  const maxAge = 60 * 60 * 24 * 7;
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `amparian_auth=${encodeURIComponent(displayName)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
-}
-
-export function clearAuthCookie() {
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `amparian_auth=; path=/; max-age=0; SameSite=Lax${secure}`;
-}
-
-/** Remove tokens, dados locais e cookie de sessão (logout completo). */
+/** Remove dados locais não sensíveis da sessão. */
 export function clearSession() {
   clearSessionStorage();
-  clearAuthCookie();
 }
 
 /** Revoga refresh na API (se possível) e limpa sessão local. */
@@ -33,6 +20,7 @@ export async function logoutAndClear(): Promise<void> {
   try {
     await apiJson("/auth/logout", {
       method: "POST",
+      json: {},
       auth: false,
     });
   } catch {

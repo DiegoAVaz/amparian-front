@@ -35,12 +35,6 @@ async function parseJsonError(res: Response): Promise<never> {
   throw new ApiError(message, res.status, code);
 }
 
-function clearAuthCookie(): void {
-  if (typeof document === "undefined") return;
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `amparian_auth=; path=/; max-age=0; SameSite=Lax${secure}`;
-}
-
 function redirectToLogin(): void {
   if (typeof window === "undefined") return;
   const current = window.location.pathname;
@@ -53,7 +47,6 @@ function redirectToLogin(): void {
 
 function clearSessionAndRedirect(): void {
   clearSessionStorage();
-  clearAuthCookie();
   redirectToLogin();
 }
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { setAuthCookie, updateStoredUser } from "@/lib/auth";
+import { updateStoredUser } from "@/lib/auth";
 import { getMyProfile, updateMyProfile, type UserProfile } from "@/lib/amparian-api";
 import { ApiError } from "@/lib/api";
 
@@ -82,7 +82,6 @@ export function SettingsContent() {
 
       setProfile(nextProfile);
       updateStoredUser({ name: nextProfile.name, email: nextProfile.email });
-      setAuthCookie(nextProfile.name);
       setSuccess("Perfil atualizado com sucesso.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Não foi possível salvar suas alterações.");

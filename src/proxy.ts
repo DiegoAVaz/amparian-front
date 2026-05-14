@@ -3,11 +3,11 @@ import type { NextRequest } from "next/server";
 
 const PROTECTED_PATHS = ["/home"];
 const GUEST_ONLY_PATHS = ["/login", "/criar-conta", "/esqueci-minha-senha"];
+const ACCESS_COOKIE_NAME = "amparian_access_token";
 
 export function proxy(request: NextRequest) {
-  const auth = request.cookies.get("amparian_auth")?.value;
   const { pathname } = request.nextUrl;
-  const hasSession = Boolean(auth);
+  const hasSession = Boolean(request.cookies.get(ACCESS_COOKIE_NAME)?.value);
 
   const isProtected = PROTECTED_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),

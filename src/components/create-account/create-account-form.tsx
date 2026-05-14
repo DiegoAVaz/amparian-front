@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 import fundoCreateAccount from "@/assets/fundoCreateAccount.jpg";
 import { ApiError, apiJson } from "@/lib/api";
-import { persistUser, setAuthCookie } from "@/lib/auth";
+import { persistUser } from "@/lib/auth";
 
 type RegisterResponse = {
   user: {
@@ -54,8 +54,7 @@ export function CreateAccountForm() {
       });
 
       persistUser({ name: data.user.name, email: data.user.email });
-      setAuthCookie(data.user.name);
-      router.push("/home");
+      router.replace("/home");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

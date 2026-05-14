@@ -76,7 +76,7 @@ export function DashboardShell({ activeNav, children }: Props) {
   async function handleLogout() {
     closeMobileNav();
     await logoutAndClear();
-    router.push("/login");
+    router.replace("/login");
   }
 
   return (

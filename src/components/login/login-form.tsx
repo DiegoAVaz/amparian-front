@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 import fundoLogin from "@/assets/fundoLogin.png";
 import { ApiError, apiJson } from "@/lib/api";
-import { persistUser, setAuthCookie } from "@/lib/auth";
+import { persistUser } from "@/lib/auth";
 
 type LoginResponse = {
   user: {
@@ -44,8 +44,7 @@ export function LoginForm() {
       });
 
       persistUser({ name: data.user.name, email: data.user.email });
-      setAuthCookie(data.user.name);
-      router.push("/home");
+      router.replace("/home");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
