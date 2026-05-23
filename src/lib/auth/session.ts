@@ -1,3 +1,5 @@
+const ACCESS_KEY = "amparian_access_token";
+const REFRESH_KEY = "amparian_refresh_token";
 const USER_KEY = "amparian_user";
 
 export type StoredUser = {
@@ -5,8 +7,31 @@ export type StoredUser = {
   email: string;
 };
 
-export function persistUser(user: StoredUser): void {
+export function persistSession(
+  tokens: { accessToken: string; refreshToken: string },
+  user: StoredUser,
+): void {
+  localStorage.setItem(ACCESS_KEY, tokens.accessToken);
+  localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function getAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(ACCESS_KEY);
+}
+
+export function setAccessToken(token: string): void {
+  localStorage.setItem(ACCESS_KEY, token);
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(REFRESH_KEY);
+}
+
+export function setRefreshToken(token: string): void {
+  localStorage.setItem(REFRESH_KEY, token);
 }
 
 export function getStoredUser(): StoredUser | null {
@@ -28,5 +53,7 @@ export function updateStoredUser(patch: Partial<StoredUser>): StoredUser | null 
 }
 
 export function clearSessionStorage(): void {
+  localStorage.removeItem(ACCESS_KEY);
+  localStorage.removeItem(REFRESH_KEY);
   localStorage.removeItem(USER_KEY);
 }

@@ -1,4 +1,10 @@
-import { clearSessionStorage } from "@/lib/auth/session";
+import {
+  clearSessionStorage,
+  getAccessToken,
+  getRefreshToken,
+  setAccessToken,
+  setRefreshToken,
+} from "@/lib/auth/session";
 import { getApiBaseUrl } from "./config";
 
 export class ApiError extends Error {
@@ -20,7 +26,7 @@ type ApiFetchOptions = RequestInit & {
   retryOnAuthError?: boolean;
 };
 
-let refreshPromise: Promise<"refreshed" | null> | null = null;
+let refreshPromise: Promise<string | null> | null = null;
 
 async function parseJsonError(res: Response): Promise<never> {
   let message = res.statusText || "Erro na requisição";
@@ -35,6 +41,11 @@ async function parseJsonError(res: Response): Promise<never> {
   throw new ApiError(message, res.status, code);
 }
 
+function clearAuthCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = "amparian_auth=; path=/; max-age=0";
+}
+
 function redirectToLogin(): void {
   if (typeof window === "undefined") return;
   const current = window.location.pathname;
@@ -47,14 +58,19 @@ function redirectToLogin(): void {
 
 function clearSessionAndRedirect(): void {
   clearSessionStorage();
+  clearAuthCookie();
   redirectToLogin();
 }
 
-function buildHeaders(init: HeadersInit | undefined, body: JsonBody | undefined): Headers {
+function buildHeaders(init: HeadersInit | undefined, body: JsonBody | undefined, sendBearer: boolean): Headers {
   const h = new Headers(init);
   const isJsonBody = body !== undefined && body !== null && typeof body === "object";
   if (isJsonBody && !h.has("Content-Type")) {
     h.set("Content-Type", "application/json");
+  }
+  if (sendBearer) {
+    const token = getAccessToken();
+    if (token) h.set("Authorization", `Bearer ${token}`);
   }
   return h;
 }
@@ -72,13 +88,17 @@ async function readApiError(res: Response): Promise<{ message: string; code?: st
   return { message, code };
 }
 
-async function refreshAccessToken(): Promise<boolean> {
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return null;
+
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const base = getApiBaseUrl();
       const res = await fetch(`${base}/api/v1/auth/refresh`, {
         method: "POST",
-        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
       });
 
       if (!res.ok) {
@@ -86,14 +106,20 @@ async function refreshAccessToken(): Promise<boolean> {
         return null;
       }
 
-      return "refreshed";
+      const data = (await res.json()) as {
+        accessToken: string;
+        refreshToken?: string;
+      };
+
+      setAccessToken(data.accessToken);
+      if (data.refreshToken) setRefreshToken(data.refreshToken);
+      return data.accessToken;
     })().finally(() => {
       refreshPromise = null;
     });
   }
 
-  const result = await refreshPromise;
-  return result === "refreshed";
+  return refreshPromise;
 }
 
 export async function apiFetch(
@@ -103,12 +129,11 @@ export async function apiFetch(
   const base = getApiBaseUrl();
   const { json, auth: useBearer = true, retryOnAuthError = true, ...rest } = options;
   const body = json !== undefined ? JSON.stringify(json) : rest.body;
-  const headers = buildHeaders(rest.headers, json);
+  const headers = buildHeaders(rest.headers, json, useBearer);
 
   const url = `${base}/api/v1${path.startsWith("/") ? path : `/${path}`}`;
   const res = await fetch(url, {
     ...rest,
-    credentials: rest.credentials ?? "include",
     headers,
     body,
   });
@@ -116,18 +141,15 @@ export async function apiFetch(
   if (res.status === 401 && useBearer && retryOnAuthError) {
     const { code } = await readApiError(res.clone());
     if (code === "UNAUTHORIZED" || code === "TOKEN_EXPIRED") {
-      const refreshed = await refreshAccessToken();
-      if (refreshed) {
-        const retryHeaders = buildHeaders(rest.headers, json);
+      const nextAccess = await refreshAccessToken();
+      if (nextAccess) {
+        const retryHeaders = buildHeaders(rest.headers, json, useBearer);
+        retryHeaders.set("Authorization", `Bearer ${nextAccess}`);
         const retryRes = await fetch(url, {
           ...rest,
-          credentials: rest.credentials ?? "include",
           headers: retryHeaders,
           body,
         });
-        if (retryRes.status === 401) {
-          clearSessionAndRedirect();
-        }
         if (!retryRes.ok) await parseJsonError(retryRes);
         return retryRes;
       }
