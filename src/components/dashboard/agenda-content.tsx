@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { IconButton } from "@/components/ui";
 import { type AgendaItem, getAgenda } from "@/lib/amparian-api";
 import { ApiError } from "@/lib/api";
 
@@ -154,23 +155,23 @@ export function AgendaContent() {
           <div className="w-full flex-shrink-0 xl:w-[380px]">
             <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-lg">
               <div className="mb-4 flex items-center justify-between">
-                <button
+                <IconButton
                   type="button"
+                  icon={<ChevronLeft />}
+                  label="Mês anterior"
                   onClick={prevMonth}
-                  className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-                  aria-label="Mês anterior"
-                >
-                  <ChevronLeft />
-                </button>
+                  size="sm"
+                  variant="ghost"
+                />
                 <span className="text-base font-bold capitalize text-gray-900">{monthLabel}</span>
-                <button
+                <IconButton
                   type="button"
+                  icon={<ChevronRight />}
+                  label="Próximo mês"
                   onClick={nextMonth}
-                  className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-                  aria-label="Próximo mês"
-                >
-                  <ChevronRight />
-                </button>
+                  size="sm"
+                  variant="ghost"
+                />
               </div>
 
               <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-gray-400">

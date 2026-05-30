@@ -1,7 +1,10 @@
 import { cn } from "./variants";
 import { TextInput, type TextInputProps } from "./text-input";
 
-export type SearchInputProps = Omit<TextInputProps, "leftIcon" | "rightIcon" | "type"> & {
+export type SearchInputProps = Omit<
+  TextInputProps,
+  "leftIcon" | "rightIcon" | "type"
+> & {
   clearLabel?: string;
   onClear?: () => void;
   wrapperClassName?: string;
