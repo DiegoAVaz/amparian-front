@@ -1,5 +1,6 @@
 "use client";
 
+import { Button, IconButton } from "@/components/ui";
 import type { SubscriberRecord } from "@/lib/amparian-api";
 
 type Props = {
@@ -17,14 +18,14 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
       aria-labelledby="modal-perfil-titulo"
     >
       <div className="relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:rounded-2xl sm:p-6">
-        <button
-          type="button"
-          onClick={onClose}
+        <IconButton
           className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-          aria-label="Fechar"
-        >
-          <XIcon />
-        </button>
+          icon={<XIcon />}
+          label="Fechar"
+          onClick={onClose}
+          size="sm"
+          variant="ghost"
+        />
 
         <h2 id="modal-perfil-titulo" className="text-lg font-bold text-brand-teal">
           Perfil do inscrito
@@ -55,21 +56,23 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
         </dl>
 
         <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-          <button
+          <Button
             type="button"
             onClick={onClose}
-            className="w-full rounded-lg border border-red-600 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 sm:w-auto"
+            className="w-full sm:w-auto"
+            variant="outline"
           >
             Fechar
-          </button>
+          </Button>
           {subscriber.status !== "confirmed" && (
-            <button
+            <Button
               type="button"
               onClick={onConfirmPresence}
-              className="w-full rounded-lg bg-green-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-600 sm:w-auto"
+              className="w-full sm:w-auto"
+              variant="success"
             >
               Confirmar presença
-            </button>
+            </Button>
           )}
         </div>
       </div>

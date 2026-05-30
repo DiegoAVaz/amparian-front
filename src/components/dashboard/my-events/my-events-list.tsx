@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { Button, LinkButton, SearchInput } from "@/components/ui";
 import { type OrganizerEventDetail, type OrganizerEventSummary, getOrganizerEvents } from "@/lib/amparian-api";
 import { ApiError } from "@/lib/api";
 import { CreateEventModal } from "@/components/dashboard/create-event-modal";
@@ -79,46 +79,46 @@ export function MyEventsList() {
         <main className="flex flex-1 flex-col gap-6 overflow-auto p-4 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-xl font-bold text-brand-teal">Meus Eventos</h1>
-            <button
+            <Button
               type="button"
               onClick={() => setModal("create-event")}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-600 sm:w-auto"
+              className="w-full sm:w-auto"
+              leftIcon={<PlusIcon />}
+              variant="success"
             >
-              <span className="text-lg leading-none">+</span>
               Criar Evento
-            </button>
+            </Button>
           </div>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-wrap gap-1 border-b border-gray-200">
               {TABS.map((t) => (
-                <button
+                <Button
                   key={t.id}
                   type="button"
                   onClick={() => setTab(t.id)}
                   className={[
-                    "relative px-4 pb-3 text-sm font-medium transition-colors",
+                    "relative rounded-none px-4 pb-3 hover:bg-transparent",
                     tab === t.id ? "text-brand-teal" : "text-gray-500 hover:text-gray-700",
                   ].join(" ")}
+                  size="sm"
+                  variant="ghost"
                 >
                   {t.label}
                   {tab === t.id && (
                     <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-brand-teal" />
                   )}
-                </button>
+                </Button>
               ))}
             </div>
 
-            <div className="flex w-full max-w-md items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm sm:w-80">
-              <SearchIcon />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Pesquisar eventos..."
-                className="flex-1 text-sm text-gray-700 outline-none placeholder:text-gray-400"
-              />
-            </div>
+            <SearchInput
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery("")}
+              placeholder="Pesquisar eventos..."
+              wrapperClassName="w-full max-w-md sm:w-80"
+            />
           </div>
 
           {loading ? (
@@ -149,12 +149,13 @@ export function MyEventsList() {
                         {new Date(event.startsAt).toLocaleDateString("pt-BR")} • {event.statusLabel}
                       </p>
                     </div>
-                    <Link
+                    <LinkButton
                       href={`/home/meus-eventos/${event.id}`}
-                      className="inline-flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-teal-hover sm:w-auto sm:flex-shrink-0"
+                      className="w-full sm:w-auto sm:flex-shrink-0"
+                      size="sm"
                     >
                       Ver detalhes
-                    </Link>
+                    </LinkButton>
                   </div>
                 </article>
               ))}
@@ -192,7 +193,7 @@ export function MyEventsList() {
   );
 }
 
-function SearchIcon() {
+function PlusIcon() {
   return (
     <svg
       width="16"
@@ -203,10 +204,9 @@ function SearchIcon() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="flex-shrink-0 text-gray-400"
     >
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
 }

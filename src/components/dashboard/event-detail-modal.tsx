@@ -1,13 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 
+import {
+  Button,
+  Checkbox,
+  FormAlert,
+  FormField,
+  IconButton,
+  TextInput,
+} from "@/components/ui";
 import {
   type PublicEventDetail,
   getPublicEvent,
   registerForPublicEvent,
 } from "@/lib/amparian-api";
-import { ApiError } from "@/lib/api";
+import {
+  ApiError,
+  getApiFormError,
+  type ApiErrorFieldMap,
+  type ApiFieldErrors,
+} from "@/lib/api";
 
 import type { EventSummary } from "./types";
 
@@ -16,12 +30,20 @@ type Props = {
   onClose: () => void;
 };
 
+type RegistrationField = "participantRole" | "agreedResponsibility";
+
+const REGISTRATION_FIELD_MAP: ApiErrorFieldMap<RegistrationField> = {
+  agreed: "agreedResponsibility",
+  responsibility: "agreedResponsibility",
+};
+
 export function EventDetailModal({ event, onClose }: Props) {
   const [detail, setDetail] = useState<PublicEventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [participantRole, setParticipantRole] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<RegistrationField>>({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -51,12 +73,16 @@ export function EventDetailModal({ event, onClose }: Props) {
 
   async function handleRegistration() {
     if (!agreed) {
-      setError("Você precisa aceitar o termo de responsabilidade.");
+      setFieldErrors({
+        agreedResponsibility: "Você precisa aceitar o termo de responsabilidade.",
+      });
+      setError("");
       return;
     }
 
     setSubmitting(true);
     setError("");
+    setFieldErrors({});
     setSuccess("");
 
     try {
@@ -66,7 +92,16 @@ export function EventDetailModal({ event, onClose }: Props) {
       });
       setSuccess("Inscrição realizada com sucesso.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Não foi possível concluir a inscrição.");
+      const {
+        fieldErrors: nextFieldErrors,
+        formError,
+      } = getApiFormError<RegistrationField>(
+        err,
+        "Não foi possível concluir a inscrição.",
+        { fieldMap: REGISTRATION_FIELD_MAP },
+      );
+      setFieldErrors(nextFieldErrors);
+      setError(formError);
     } finally {
       setSubmitting(false);
     }
@@ -87,14 +122,14 @@ export function EventDetailModal({ event, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
       <div className="relative flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl md:max-h-[90vh] md:rounded-2xl md:flex-row">
-        <button
-          type="button"
+        <IconButton
+          className="absolute right-3 top-3 z-10 bg-white/80"
+          icon={<XIcon />}
+          label="Fechar"
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 rounded-full bg-white/80 p-1 text-gray-400 hover:text-gray-600"
-          aria-label="Fechar"
-        >
-          <XIcon />
-        </button>
+          size="sm"
+          variant="ghost"
+        />
 
         <div className="flex h-40 w-full flex-shrink-0 items-center justify-center bg-gray-200 md:h-auto md:w-44">
           {data.coverImageUrl ? (
@@ -156,33 +191,39 @@ export function EventDetailModal({ event, onClose }: Props) {
                 </div>
               )}
 
-              <label className="flex flex-col gap-1 text-xs text-gray-600">
-                <span className="font-medium text-gray-700">Papel no evento</span>
-                <input
+              <FormField label="Papel no evento" error={fieldErrors.participantRole}>
+                <TextInput
                   type="text"
                   value={participantRole}
-                  onChange={(e) => setParticipantRole(e.target.value)}
+                  onChange={(e) => {
+                    setParticipantRole(e.target.value);
+                    setFieldErrors((current) => ({
+                      ...current,
+                      participantRole: undefined,
+                    }));
+                  }}
                   placeholder="Ex: Voluntário, Designer, Instrutor"
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
+                  error={fieldErrors.participantRole}
                 />
-              </label>
+              </FormField>
 
-              <label className="flex items-start gap-2 text-xs text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-0.5 accent-brand-teal"
-                />
-                <span>Li e concordo com o termo de responsabilidade do evento.</span>
-              </label>
+              <Checkbox
+                checked={agreed}
+                onChange={(e) => {
+                  setAgreed(e.target.checked);
+                  setFieldErrors((current) => ({
+                    ...current,
+                    agreedResponsibility: undefined,
+                  }));
+                }}
+                label="Li e concordo com o termo de responsabilidade do evento."
+                error={fieldErrors.agreedResponsibility}
+              />
 
-              {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-              {success && (
-                <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{success}</p>
-              )}
+              <FormAlert variant="error">{error}</FormAlert>
+              <FormAlert variant="success">{success}</FormAlert>
 
-              <button
+              <Button
                 type="button"
                 disabled={
                   submitting ||
@@ -191,10 +232,13 @@ export function EventDetailModal({ event, onClose }: Props) {
                   data.computedStatus === "cancelled"
                 }
                 onClick={() => void handleRegistration()}
-                className="w-full rounded-lg bg-brand-teal py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover disabled:opacity-60"
+                fullWidth
+                loading={submitting}
+                loadingLabel="Enviando..."
+                size="lg"
               >
-                {submitting ? "Enviando..." : "Quero participar"}
-              </button>
+                Quero participar
+              </Button>
             </>
           )}
         </div>
@@ -203,7 +247,7 @@ export function EventDetailModal({ event, onClose }: Props) {
   );
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
+function Badge({ children }: { children: ReactNode }) {
   return (
     <span className="rounded-full bg-brand-teal/10 px-3 py-1 text-xs font-medium text-brand-teal">
       {children}

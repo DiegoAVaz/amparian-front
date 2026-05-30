@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
+import { Button, IconButton } from "@/components/ui";
 import {
   type OrganizerEventDetail as OrganizerEventDetailRecord,
   type SubscriberRecord,
@@ -170,20 +172,22 @@ export function OrganizerEventDetail({ eventId }: Props) {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <h1 className="break-words text-xl font-bold text-brand-teal sm:max-w-xl">{event.title}</h1>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <button
+              <Button
                 type="button"
                 onClick={() => setModal("edit")}
-                className="w-full rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600 sm:w-auto"
+                className="w-full sm:w-auto"
+                variant="success"
               >
                 Editar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => void handleDeleteEvent()}
-                className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 sm:w-auto"
+                className="w-full sm:w-auto"
+                variant="danger"
               >
                 Excluir
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -270,22 +274,22 @@ export function OrganizerEventDetail({ eventId }: Props) {
                         </td>
                         <td className="px-3 py-3 sm:px-6">
                           <div className="flex justify-end gap-2">
-                            <button
+                            <IconButton
                               type="button"
+                              icon={<EyeIcon />}
+                              label={`Ver perfil de ${row.name}`}
                               onClick={() => setSubscriberModal(row)}
-                              className="rounded-lg p-2 text-brand-teal hover:bg-brand-teal/10"
-                              aria-label={`Ver perfil de ${row.name}`}
-                            >
-                              <EyeIcon />
-                            </button>
-                            <button
+                              size="sm"
+                              variant="secondary"
+                            />
+                            <IconButton
                               type="button"
+                              icon={<TrashIcon />}
+                              label={`Cancelar inscrição de ${row.name}`}
                               onClick={() => void handleCancelRegistration(row.id)}
-                              className="rounded-lg p-2 text-red-600 hover:bg-red-50"
-                              aria-label={`Cancelar inscrição de ${row.name}`}
-                            >
-                              <TrashIcon />
-                            </button>
+                              size="sm"
+                              variant="danger"
+                            />
                           </div>
                         </td>
                       </tr>
@@ -296,13 +300,14 @@ export function OrganizerEventDetail({ eventId }: Props) {
             </div>
 
             <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
-              <button
+              <Button
                 type="button"
                 onClick={exportCsv}
-                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:w-auto"
+                className="w-full sm:w-auto"
+                variant="outline"
               >
                 Exportar CSV
-              </button>
+              </Button>
             </div>
           </section>
         </main>
@@ -394,7 +399,7 @@ function formatLongDate(value: string) {
   });
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
+function Badge({ children }: { children: ReactNode }) {
   return (
     <span className="rounded-full bg-brand-teal/10 px-3 py-1 text-xs font-medium text-brand-teal">
       {children}
