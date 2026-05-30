@@ -357,15 +357,16 @@ function statusLabel(status: SubscriberRecord["status"]) {
 }
 
 function computedStatusLabel(status: OrganizerEventDetailRecord["computedStatus"]) {
-  if (status === "ended") return "Encerrado";
+  if (status === "past") return "Encerrado";
   if (status === "ongoing") return "Em andamento";
   if (status === "draft") return "Rascunho";
   if (status === "cancelled") return "Cancelado";
+  if (status === "published") return "Publicado";
   return "Ativo";
 }
 
 function statusPill(status: OrganizerEventDetailRecord["computedStatus"]) {
-  if (status === "ended") return "bg-gray-100 text-gray-700";
+  if (status === "past") return "bg-gray-100 text-gray-700";
   if (status === "ongoing") return "bg-amber-100 text-amber-900";
   if (status === "draft") return "bg-sky-100 text-sky-800";
   if (status === "cancelled") return "bg-red-100 text-red-700";

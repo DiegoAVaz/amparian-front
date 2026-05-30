@@ -6,8 +6,11 @@ import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 
 import fundoLogin from "@/assets/fundoLogin.png";
-import { ApiError, apiJson } from "@/lib/api";
+import { Button, FormAlert, FormField, TextInput } from "@/components/ui";
+import { apiJson, getApiFormError, type ApiFieldErrors } from "@/lib/api";
 import { persistSession, setAuthCookie } from "@/lib/auth";
+
+type LoginField = "email" | "password";
 
 type LoginResponse = {
   accessToken: string;
@@ -24,6 +27,7 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<LoginField>>({});
   const [loading, setLoading] = useState(false);
   const search = useSyncExternalStore(subscribeToLocation, getClientSearch, () => "");
   const reason = new URLSearchParams(search).get("reason");
@@ -37,6 +41,7 @@ export function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -53,11 +58,12 @@ export function LoginForm() {
       setAuthCookie(data.user.name);
       router.push("/home");
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Não foi possível conectar. Verifique se a API está rodando.");
-      }
+      const { fieldErrors: nextFieldErrors, formError } = getApiFormError<LoginField>(
+        err,
+        "Não foi possível conectar. Verifique se a API está rodando.",
+      );
+      setFieldErrors(nextFieldErrors);
+      setError(formError);
       setLoading(false);
     }
   }
@@ -83,38 +89,53 @@ export function LoginForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-transparent bg-white/80 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-brand-teal focus:bg-white focus:ring-1 focus:ring-brand-teal"
-          />
-          <input
-            type="password"
-            placeholder="Senha"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-transparent bg-white/80 px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-brand-teal focus:bg-white focus:ring-1 focus:ring-brand-teal"
-          />
+          <FormField error={fieldErrors.email}>
+            <TextInput
+              type="email"
+              placeholder="Email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFieldErrors((current) => ({ ...current, email: undefined }));
+              }}
+              error={fieldErrors.email}
+              variant="translucent"
+              className="px-4 py-3 text-sm"
+            />
+          </FormField>
+          <FormField error={fieldErrors.password}>
+            <TextInput
+              type="password"
+              placeholder="Senha"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setFieldErrors((current) => ({ ...current, password: undefined }));
+              }}
+              error={fieldErrors.password}
+              variant="translucent"
+              className="px-4 py-3 text-sm"
+            />
+          </FormField>
 
-          {message && (
-            <p className="rounded-lg bg-red-50/80 px-3 py-2 text-center text-xs font-medium text-red-600">
-              {message}
-            </p>
-          )}
+          <FormAlert align="center" className="text-xs" variant="error">
+            {message}
+          </FormAlert>
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full rounded-lg bg-brand-teal py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+            loading={loading}
+            loadingLabel="Entrando..."
+            fullWidth
+            className="mt-2 py-3"
           >
-            {loading ? "Entrando..." : "Login"}
-          </button>
+            Login
+          </Button>
         </form>
 
         <div className="flex flex-col items-center gap-2 text-center text-sm text-brand-teal sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3">

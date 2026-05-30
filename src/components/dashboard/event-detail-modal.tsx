@@ -81,7 +81,7 @@ export function EventDetailModal({ event, onClose }: Props) {
     highlightSkill: null,
     types: [],
     requirements: [],
-    computedStatus: "active" as const,
+    computedStatus: "upcoming" as const,
   };
 
   return (
@@ -186,7 +186,8 @@ export function EventDetailModal({ event, onClose }: Props) {
                 type="button"
                 disabled={
                   submitting ||
-                  data.computedStatus === "ended" ||
+                  data.computedStatus === "past" ||
+                  data.computedStatus === "draft" ||
                   data.computedStatus === "cancelled"
                 }
                 onClick={() => void handleRegistration()}
