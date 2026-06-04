@@ -2,17 +2,39 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import {
+  Award,
+  CalendarCog,
+  CreditCard,
+  Footprints,
+  Shield,
+} from "lucide-react";
 
 import { SearchInput } from "@/components/ui";
 
 import { DashboardShell } from "./dashboard-shell";
 
 const CATEGORIES: { label: string; icon: ReactNode }[] = [
-  { label: "Primeiros passos", icon: <IconFootprints /> },
-  { label: "Gestão de eventos", icon: <IconCalendarGear /> },
-  { label: "Assinatura e pagamentos", icon: <IconCard /> },
-  { label: "Segurança e conduta", icon: <IconShield /> },
-  { label: "Certificados e conquistas", icon: <IconRibbon /> },
+  {
+    label: "Primeiros passos",
+    icon: <Footprints size={28} strokeWidth={2} aria-hidden="true" />,
+  },
+  {
+    label: "Gestão de eventos",
+    icon: <CalendarCog size={28} strokeWidth={2} aria-hidden="true" />,
+  },
+  {
+    label: "Assinatura e pagamentos",
+    icon: <CreditCard size={28} strokeWidth={2} aria-hidden="true" />,
+  },
+  {
+    label: "Segurança e conduta",
+    icon: <Shield size={28} strokeWidth={2} aria-hidden="true" />,
+  },
+  {
+    label: "Certificados e conquistas",
+    icon: <Award size={28} strokeWidth={2} aria-hidden="true" />,
+  },
 ];
 
 export function HelpContent() {
@@ -65,54 +87,5 @@ export function HelpContent() {
         </div>
       </main>
     </DashboardShell>
-  );
-}
-
-function IconFootprints() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z" />
-      <path d="M20 20.5v.5a2 2 0 1 1-4 0v-.5c0-2.05 1.131-3.768 1.834-5.527a1.06 1.06 0 0 0 .163-.819C17.41 12.66 18 11.74 18 10c0-2.21-1.79-4-4-4-1.288 0-2.318.55-3.08 1.203" />
-    </svg>
-  );
-}
-
-function IconCalendarGear() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-      <circle cx="12" cy="15" r="2" />
-      <path d="M12 13v-1M12 18v-1M14.5 14.5l.7-.7M10.2 16.8l.7-.7M14.5 17.5l.7.7M10.2 15.2l.7.7" />
-    </svg>
-  );
-}
-
-function IconCard() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="2" y="5" width="20" height="14" rx="2" />
-      <line x1="2" y1="10" x2="22" y2="10" />
-    </svg>
-  );
-}
-
-function IconShield() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-    </svg>
-  );
-}
-
-function IconRibbon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" />
-      <path d="M12 15v7M8 22h8" />
-      <path d="M8 11h8" />
-    </svg>
   );
 }

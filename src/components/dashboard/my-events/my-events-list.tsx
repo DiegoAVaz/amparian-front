@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 
 import { Button, LinkButton, SearchInput } from "@/components/ui";
 import { type OrganizerEventDetail, type OrganizerEventSummary, getOrganizerEvents } from "@/lib/amparian-api";
@@ -83,7 +84,11 @@ export function MyEventsList() {
               type="button"
               onClick={() => setModal("create-event")}
               className="w-full sm:w-auto"
-              leftIcon={<PlusIcon />}
+              leftIcon={
+                <span className="flex h-5 w-5 items-center justify-center">
+                  <Plus size={18} strokeWidth={3} aria-hidden="true" />
+                </span>
+              }
               variant="success"
             >
               Criar Evento
@@ -190,24 +195,6 @@ export function MyEventsList() {
         )}
       </>
     </DashboardShell>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
   );
 }
 

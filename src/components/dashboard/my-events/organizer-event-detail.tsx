@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, Trash2 } from "lucide-react";
 
 import { Button, IconButton } from "@/components/ui";
 import {
@@ -276,7 +277,7 @@ export function OrganizerEventDetail({ eventId }: Props) {
                           <div className="flex justify-end gap-2">
                             <IconButton
                               type="button"
-                              icon={<EyeIcon />}
+                              icon={<Eye size={18} strokeWidth={2} aria-hidden="true" />}
                               label={`Ver perfil de ${row.name}`}
                               onClick={() => setSubscriberModal(row)}
                               size="sm"
@@ -284,7 +285,7 @@ export function OrganizerEventDetail({ eventId }: Props) {
                             />
                             <IconButton
                               type="button"
-                              icon={<TrashIcon />}
+                              icon={<Trash2 size={18} strokeWidth={2} aria-hidden="true" />}
                               label={`Cancelar inscrição de ${row.name}`}
                               onClick={() => void handleCancelRegistration(row.id)}
                               size="sm"
@@ -404,23 +405,5 @@ function Badge({ children }: { children: ReactNode }) {
     <span className="rounded-full bg-brand-teal/10 px-3 py-1 text-xs font-medium text-brand-teal">
       {children}
     </span>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
   );
 }

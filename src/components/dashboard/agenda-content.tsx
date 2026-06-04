@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { IconButton } from "@/components/ui";
 import { type AgendaItem, getAgenda } from "@/lib/amparian-api";
@@ -157,7 +158,11 @@ export function AgendaContent() {
               <div className="mb-4 flex items-center justify-between">
                 <IconButton
                   type="button"
-                  icon={<ChevronLeft />}
+                  icon={
+                    <span className="flex h-4 w-4 items-center justify-center">
+                      <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                  }
                   label="Mês anterior"
                   onClick={prevMonth}
                   size="sm"
@@ -166,7 +171,11 @@ export function AgendaContent() {
                 <span className="text-base font-bold capitalize text-gray-900">{monthLabel}</span>
                 <IconButton
                   type="button"
-                  icon={<ChevronRight />}
+                  icon={
+                    <span className="flex h-4 w-4 items-center justify-center">
+                      <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                  }
                   label="Próximo mês"
                   onClick={nextMonth}
                   size="sm"
@@ -204,22 +213,6 @@ export function AgendaContent() {
         </div>
       </main>
     </DashboardShell>
-  );
-}
-
-function ChevronLeft() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  );
-}
-
-function ChevronRight() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="m9 18 6-6-6-6" />
-    </svg>
   );
 }
 

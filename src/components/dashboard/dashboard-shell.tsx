@@ -97,7 +97,9 @@ export function DashboardShell({ activeNav, children }: Props) {
           />
           <div className="flex min-w-0 items-center gap-2">
             <ShieldIcon variant="white" size={28} />
-            <span className="truncate text-base font-bold text-white sm:text-lg">Amparian</span>
+            <span className="truncate text-base font-bold text-white sm:text-lg">
+              Amparian
+            </span>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -137,7 +139,9 @@ export function DashboardShell({ activeNav, children }: Props) {
           id="dashboard-sidebar"
           className={[
             "fixed inset-y-0 left-0 z-40 flex w-[min(18rem,88vw)] flex-col border-r border-gray-100 bg-white shadow-lg transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-56 lg:translate-x-0 lg:shadow-sm",
-            mobileNavOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+            mobileNavOpen
+              ? "translate-x-0"
+              : "-translate-x-full lg:translate-x-0",
           ].join(" ")}
         >
           <div className="flex items-center justify-between border-b border-gray-100 px-3 py-3 lg:hidden">
@@ -206,7 +210,9 @@ export function DashboardShell({ activeNav, children }: Props) {
           </div>
         </aside>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">{children}</div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -236,7 +242,9 @@ function SidebarLink({
       onClick={onNavigate}
       className={[
         "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors active:bg-gray-50",
-        active ? "bg-brand-teal text-white shadow-sm" : "text-gray-600 hover:bg-gray-100",
+        active
+          ? "bg-brand-teal text-white shadow-sm"
+          : "text-gray-600 hover:bg-gray-100",
       ].join(" ")}
     >
       {icon}

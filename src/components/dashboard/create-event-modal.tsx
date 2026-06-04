@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
 
 import {
   Button,
@@ -135,7 +136,6 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
         ? await updateOrganizerEvent(initialEvent.id, payload)
         : await createOrganizerEvent(payload);
       onSaved(event, publish ? "published" : "draft");
-      onClose();
     } catch (err) {
       const {
         fieldErrors: nextFieldErrors,
@@ -159,8 +159,8 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
       <div className="relative max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:rounded-2xl sm:p-8">
         <IconButton
-          className="absolute right-4 top-4"
-          icon={<XIcon />}
+          className="absolute right-4 top-4 text-gray-400 hover:bg-transparent hover:text-gray-500"
+          icon={<X size={20} strokeWidth={2} aria-hidden="true" />}
           label="Fechar"
           onClick={onClose}
           size="sm"
@@ -434,21 +434,4 @@ function combineDateTime(date: string, time: string) {
 function nullable(value: string): string | null {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
-}
-
-function XIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
 }
