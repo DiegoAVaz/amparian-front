@@ -12,6 +12,7 @@ import {
   getMyStats,
 } from "@/lib/amparian-api";
 import { ApiError } from "@/lib/api";
+import { formatBrazilianPhone } from "@/lib/phone";
 
 import { DashboardShell } from "./dashboard-shell";
 
@@ -89,7 +90,10 @@ export function ProfilesContent() {
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-4">
                   <ReadOnlyField label="Nome" value={profile?.name ?? ""} />
-                  <ReadOnlyField label="Telefone" value={profile?.phone ?? "Não informado"} />
+                  <ReadOnlyField
+                    label="Telefone"
+                    value={profile?.phone ? formatBrazilianPhone(profile.phone) : "Não informado"}
+                  />
                   <ReadOnlyField
                     label="Organização pública"
                     value={profile?.publicOrganizationName ?? "Não informado"}

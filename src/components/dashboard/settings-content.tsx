@@ -18,6 +18,11 @@ import {
   type ApiErrorFieldMap,
   type ApiFieldErrors,
 } from "@/lib/api";
+import {
+  formatBrazilianPhone,
+  getBrazilianPhoneDigits,
+  isValidBrazilianPhone,
+} from "@/lib/phone";
 
 import { DashboardShell } from "./dashboard-shell";
 
@@ -61,7 +66,7 @@ export function SettingsContent() {
           setProfile(nextProfile);
           setForm({
             name: nextProfile.name,
-            phone: nextProfile.phone ?? "",
+            phone: nextProfile.phone ? formatBrazilianPhone(nextProfile.phone) : "",
             city: nextProfile.city ?? "",
             state: nextProfile.state ?? "",
             bio: nextProfile.bio ?? "",
@@ -103,7 +108,7 @@ export function SettingsContent() {
     try {
       const nextProfile = await updateMyProfile({
         name: form.name.trim(),
-        phone: nullable(form.phone),
+        phone: nullable(getBrazilianPhoneDigits(form.phone)),
         city: nullable(form.city),
         state: nullable(form.state)?.toUpperCase() ?? null,
         bio: nullable(form.bio),
@@ -112,6 +117,10 @@ export function SettingsContent() {
       });
 
       setProfile(nextProfile);
+      setForm((current) => ({
+        ...current,
+        phone: nextProfile.phone ? formatBrazilianPhone(nextProfile.phone) : "",
+      }));
       updateStoredUser({ name: nextProfile.name, email: nextProfile.email });
       setSuccess("Perfil atualizado com sucesso.");
     } catch (err) {
@@ -159,7 +168,9 @@ export function SettingsContent() {
                   <FormField label="Telefone" error={fieldErrors.phone}>
                     <TextInput
                       value={form.phone}
-                      onChange={(e) => updateField("phone", e.target.value)}
+                      onChange={(e) => updatePhoneField(e.target.value)}
+                      inputMode="numeric"
+                      placeholder="(DDD) xxxxx-xxxx ou (DDD) xxxx-xxxx"
                       error={fieldErrors.phone}
                     />
                   </FormField>
@@ -289,9 +300,24 @@ export function SettingsContent() {
     setSuccess("");
   }
 
+  function updatePhoneField(value: string) {
+    setForm((current) => ({ ...current, phone: value }));
+    setFieldErrors((current) => ({
+      ...current,
+      phone:
+        value.trim() && getBrazilianPhoneDigits(value).length > 11
+          ? "Informe no máximo 11 dígitos para telefone ou celular."
+          : undefined,
+    }));
+    setSuccess("");
+  }
+
   function getLocalFieldErrors(): ApiFieldErrors<ProfileField> {
     const nextErrors: ApiFieldErrors<ProfileField> = {};
     if (!form.name.trim()) nextErrors.name = "Informe seu nome.";
+    if (form.phone.trim() && !isValidBrazilianPhone(form.phone)) {
+      nextErrors.phone = "Informe o telefone no formato (DDD) xxxxx-xxxx ou (DDD) xxxx-xxxx.";
+    }
     if (form.state.trim() && form.state.trim().length !== 2) {
       nextErrors.state = "Informe a UF com 2 letras.";
     }

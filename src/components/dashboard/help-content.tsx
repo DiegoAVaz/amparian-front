@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import {
   Award,
@@ -11,6 +12,8 @@ import {
 } from "lucide-react";
 
 import { SearchInput } from "@/components/ui";
+import { getStoredUser } from "@/lib/auth";
+import { getMyProfile } from "@/lib/amparian-api";
 
 import { DashboardShell } from "./dashboard-shell";
 
@@ -38,12 +41,44 @@ const CATEGORIES: { label: string; icon: ReactNode }[] = [
 ];
 
 export function HelpContent() {
+  const storedUserName = useSyncExternalStore(
+    subscribeToStoredUser,
+    getStoredUserName,
+    () => "",
+  );
+  const [profileName, setProfileName] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProfileName() {
+      try {
+        const profile = await getMyProfile();
+        if (!cancelled) {
+          setProfileName(profile.name);
+        }
+      } catch {
+        /* keep stored user name or generic greeting */
+      }
+    }
+
+    void loadProfileName();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const greetingName = getFirstName(profileName || storedUserName);
+
   return (
     <DashboardShell activeNav="help">
       <main className="flex flex-1 flex-col gap-8 overflow-auto p-4 sm:gap-10 sm:p-6">
         <div className="text-center">
           <h1 className="text-lg font-bold text-brand-teal sm:text-xl">
-            Olá, Bianca! Como podemos te ajudar hoje? 🌱
+            {greetingName
+              ? `Olá, ${greetingName}! Como podemos te ajudar hoje?`
+              : "Olá! Como podemos te ajudar hoje?"}{" "}
+            🌱
           </h1>
         </div>
 
@@ -88,4 +123,17 @@ export function HelpContent() {
       </main>
     </DashboardShell>
   );
+}
+
+function getFirstName(name: string) {
+  return name.trim().split(/\s+/)[0] ?? "";
+}
+
+function subscribeToStoredUser(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
+}
+
+function getStoredUserName() {
+  return getStoredUser()?.name ?? "";
 }

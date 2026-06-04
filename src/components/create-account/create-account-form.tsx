@@ -6,11 +6,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import fundoCreateAccount from "@/assets/fundoCreateAccount.jpg";
-import { Button, Checkbox, FormAlert, FormField, TextInput } from "@/components/ui";
+import {
+  Button,
+  Checkbox,
+  FormAlert,
+  FormField,
+  TextInput,
+} from "@/components/ui";
 import { apiJson, getApiFormError, type ApiFieldErrors } from "@/lib/api";
 import { persistSession, setAuthCookie } from "@/lib/auth";
 
-type RegisterField = "name" | "email" | "phone" | "password" | "confirm" | "terms";
+type RegisterField =
+  | "name"
+  | "email"
+  | "phone"
+  | "password"
+  | "confirm"
+  | "terms";
 
 type RegisterResponse = {
   accessToken: string;
@@ -31,7 +43,9 @@ export function CreateAccountForm() {
   const [confirm, setConfirm] = useState("");
   const [terms, setTerms] = useState(false);
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<RegisterField>>({});
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<RegisterField>>(
+    {},
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -68,10 +82,11 @@ export function CreateAccountForm() {
       setAuthCookie(data.user.name);
       router.push("/home");
     } catch (err) {
-      const { fieldErrors: nextFieldErrors, formError } = getApiFormError<RegisterField>(
-        err,
-        "Não foi possível conectar. Verifique se a API está rodando.",
-      );
+      const { fieldErrors: nextFieldErrors, formError } =
+        getApiFormError<RegisterField>(
+          err,
+          "Não foi possível conectar. Verifique se a API está rodando.",
+        );
       setFieldErrors(nextFieldErrors);
       setError(formError);
       setLoading(false);
@@ -99,10 +114,14 @@ export function CreateAccountForm() {
         </div>
 
         <p className="text-center text-sm font-medium text-brand-teal">
-          Ficamos muito felizes em ter você com a gente! Vamos transformar realidades juntos?
+          Ficamos muito felizes em ter você com a gente! Vamos transformar
+          realidades juntos?
         </p>
 
-        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3">
+        <form
+          onSubmit={handleSubmit}
+          className="flex w-full flex-col gap-3 [&_[role=alert]]:font-bold [&_[role=alert]]:text-red-600"
+        >
           <FormField error={fieldErrors.name}>
             <TextInput
               type="text"
@@ -159,7 +178,10 @@ export function CreateAccountForm() {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                setFieldErrors((current) => ({ ...current, password: undefined }));
+                setFieldErrors((current) => ({
+                  ...current,
+                  password: undefined,
+                }));
               }}
               error={fieldErrors.password}
               variant="translucent"
@@ -175,7 +197,10 @@ export function CreateAccountForm() {
               value={confirm}
               onChange={(e) => {
                 setConfirm(e.target.value);
-                setFieldErrors((current) => ({ ...current, confirm: undefined }));
+                setFieldErrors((current) => ({
+                  ...current,
+                  confirm: undefined,
+                }));
               }}
               error={fieldErrors.confirm}
               variant="translucent"
@@ -193,14 +218,21 @@ export function CreateAccountForm() {
             label={
               <span className="text-brand-teal">
                 Li e aceito os{" "}
-                <Link href="#" className="underline hover:text-brand-teal-hover">
+                <Link
+                  href="#"
+                  className="underline hover:text-brand-teal-hover"
+                >
                   termos de uso da plataforma
                 </Link>
               </span>
             }
           />
 
-          <FormAlert align="center" className="text-xs" variant="error">
+          <FormAlert
+            align="center"
+            className="text-xs font-semibold"
+            variant="error"
+          >
             {error}
           </FormAlert>
 
@@ -218,7 +250,10 @@ export function CreateAccountForm() {
 
         <p className="text-sm text-white">
           Já tem uma conta?{" "}
-          <Link href="/login" className="font-medium text-brand-teal hover:underline">
+          <Link
+            href="/login"
+            className="font-medium text-brand-teal hover:underline"
+          >
             Faça login.
           </Link>
         </p>
@@ -229,9 +264,22 @@ export function CreateAccountForm() {
 
 function ShieldIcon() {
   return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-      <path d="M18 3L5 8.5V17C5 24.18 10.64 30.9 18 33C25.36 30.9 31 24.18 31 17V8.5L18 3Z" fill="#064e3b" />
-      <path d="M18 6L8 10.8V17C8 23.12 12.56 28.78 18 30.6C23.44 28.78 28 23.12 28 17V10.8L18 6Z" fill="#0d9488" />
+    <svg
+      width="36"
+      height="36"
+      viewBox="0 0 36 36"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M18 3L5 8.5V17C5 24.18 10.64 30.9 18 33C25.36 30.9 31 24.18 31 17V8.5L18 3Z"
+        fill="#064e3b"
+      />
+      <path
+        d="M18 6L8 10.8V17C8 23.12 12.56 28.78 18 30.6C23.44 28.78 28 23.12 28 17V10.8L18 6Z"
+        fill="#0d9488"
+      />
     </svg>
   );
 }
+
