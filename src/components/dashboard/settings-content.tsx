@@ -278,6 +278,12 @@ export function SettingsContent() {
             >
               Gerenciar plano
             </MutedUnderlineLink>
+            <MutedUnderlineLink
+              href="/home/configuracoes/cartoes"
+              className="mt-2 block"
+            >
+              Gerenciar cartões
+            </MutedUnderlineLink>
           </section>
 
           <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
