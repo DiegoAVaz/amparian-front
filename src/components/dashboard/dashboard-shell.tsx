@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
+import { Button, IconButton } from "@/components/ui";
 import { getStoredUser, logoutAndClear } from "@/lib/auth";
 import {
   AgendaNavIcon,
@@ -76,26 +77,29 @@ export function DashboardShell({ activeNav, children }: Props) {
   async function handleLogout() {
     closeMobileNav();
     await logoutAndClear();
-    router.push("/login");
+    router.replace("/login");
   }
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[#f0f8fa]">
       <header className="flex shrink-0 items-center justify-between gap-3 bg-brand-teal px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-2">
-          <button
+          <IconButton
             type="button"
-            className="shrink-0 rounded-lg p-2 text-white hover:bg-white/10 lg:hidden"
+            className="shrink-0 text-white hover:bg-white/10 hover:text-white lg:hidden"
             aria-expanded={mobileNavOpen}
             aria-controls="dashboard-sidebar"
-            aria-label={mobileNavOpen ? "Fechar menu" : "Abrir menu"}
+            icon={mobileNavOpen ? <CloseIcon /> : <MenuIcon />}
+            label={mobileNavOpen ? "Fechar menu" : "Abrir menu"}
             onClick={() => setMobileNavOpen((o) => !o)}
-          >
-            {mobileNavOpen ? <CloseIcon /> : <MenuIcon />}
-          </button>
+            size="sm"
+            variant="ghost"
+          />
           <div className="flex min-w-0 items-center gap-2">
             <ShieldIcon variant="white" size={28} />
-            <span className="truncate text-base font-bold text-white sm:text-lg">Amparian</span>
+            <span className="truncate text-base font-bold text-white sm:text-lg">
+              Amparian
+            </span>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -110,9 +114,14 @@ export function DashboardShell({ activeNav, children }: Props) {
           >
             <UserIcon />
           </Link>
-          <button type="button" className="text-white/80 hover:text-white" aria-label="Notificações">
-            <BellIcon />
-          </button>
+          <IconButton
+            type="button"
+            className="text-white/80 hover:bg-white/10 hover:text-white"
+            icon={<BellIcon />}
+            label="Notificações"
+            size="sm"
+            variant="ghost"
+          />
         </div>
       </header>
 
@@ -130,19 +139,21 @@ export function DashboardShell({ activeNav, children }: Props) {
           id="dashboard-sidebar"
           className={[
             "fixed inset-y-0 left-0 z-40 flex w-[min(18rem,88vw)] flex-col border-r border-gray-100 bg-white shadow-lg transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-56 lg:translate-x-0 lg:shadow-sm",
-            mobileNavOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+            mobileNavOpen
+              ? "translate-x-0"
+              : "-translate-x-full lg:translate-x-0",
           ].join(" ")}
         >
           <div className="flex items-center justify-between border-b border-gray-100 px-3 py-3 lg:hidden">
             <span className="text-sm font-semibold text-brand-teal">Menu</span>
-            <button
+            <IconButton
               type="button"
-              className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
-              aria-label="Fechar menu"
+              icon={<CloseIcon />}
+              label="Fechar menu"
               onClick={closeMobileNav}
-            >
-              <CloseIcon />
-            </button>
+              size="sm"
+              variant="ghost"
+            />
           </div>
 
           <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3 pt-4 lg:pt-5">
@@ -199,7 +210,9 @@ export function DashboardShell({ activeNav, children }: Props) {
           </div>
         </aside>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">{children}</div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -229,7 +242,9 @@ function SidebarLink({
       onClick={onNavigate}
       className={[
         "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors active:bg-gray-50",
-        active ? "bg-brand-teal text-white shadow-sm" : "text-gray-600 hover:bg-gray-100",
+        active
+          ? "bg-brand-teal text-white shadow-sm"
+          : "text-gray-600 hover:bg-gray-100",
       ].join(" ")}
     >
       {icon}
@@ -252,20 +267,21 @@ function SidebarItem({
   onClick?: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
       className={[
-        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors",
+        "w-full justify-start px-3 py-2.5 text-left",
         active
-          ? "bg-brand-teal/10 text-brand-teal"
+          ? "bg-brand-teal/10 text-brand-teal hover:bg-brand-teal/10"
           : danger
             ? "text-red-500 hover:bg-red-50"
             : "text-gray-600 hover:bg-gray-100",
       ].join(" ")}
+      leftIcon={icon}
+      variant="ghost"
     >
-      {icon}
       <span className="truncate">{label}</span>
-    </button>
+    </Button>
   );
 }

@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, Trash2 } from "lucide-react";
 
+import { Button, IconButton } from "@/components/ui";
 import {
   type OrganizerEventDetail as OrganizerEventDetailRecord,
   type SubscriberRecord,
@@ -170,20 +173,22 @@ export function OrganizerEventDetail({ eventId }: Props) {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <h1 className="break-words text-xl font-bold text-brand-teal sm:max-w-xl">{event.title}</h1>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <button
+              <Button
                 type="button"
                 onClick={() => setModal("edit")}
-                className="w-full rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600 sm:w-auto"
+                className="w-full sm:w-auto"
+                variant="success"
               >
                 Editar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => void handleDeleteEvent()}
-                className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 sm:w-auto"
+                className="w-full sm:w-auto"
+                variant="danger"
               >
                 Excluir
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -270,22 +275,22 @@ export function OrganizerEventDetail({ eventId }: Props) {
                         </td>
                         <td className="px-3 py-3 sm:px-6">
                           <div className="flex justify-end gap-2">
-                            <button
+                            <IconButton
                               type="button"
+                              icon={<Eye size={18} strokeWidth={2} aria-hidden="true" />}
+                              label={`Ver perfil de ${row.name}`}
                               onClick={() => setSubscriberModal(row)}
-                              className="rounded-lg p-2 text-brand-teal hover:bg-brand-teal/10"
-                              aria-label={`Ver perfil de ${row.name}`}
-                            >
-                              <EyeIcon />
-                            </button>
-                            <button
+                              size="sm"
+                              variant="secondary"
+                            />
+                            <IconButton
                               type="button"
+                              icon={<Trash2 size={18} strokeWidth={2} aria-hidden="true" />}
+                              label={`Cancelar inscrição de ${row.name}`}
                               onClick={() => void handleCancelRegistration(row.id)}
-                              className="rounded-lg p-2 text-red-600 hover:bg-red-50"
-                              aria-label={`Cancelar inscrição de ${row.name}`}
-                            >
-                              <TrashIcon />
-                            </button>
+                              size="sm"
+                              variant="danger"
+                            />
                           </div>
                         </td>
                       </tr>
@@ -296,13 +301,14 @@ export function OrganizerEventDetail({ eventId }: Props) {
             </div>
 
             <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
-              <button
+              <Button
                 type="button"
                 onClick={exportCsv}
-                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:w-auto"
+                className="w-full sm:w-auto"
+                variant="outline"
               >
                 Exportar CSV
-              </button>
+              </Button>
             </div>
           </section>
         </main>
@@ -357,15 +363,16 @@ function statusLabel(status: SubscriberRecord["status"]) {
 }
 
 function computedStatusLabel(status: OrganizerEventDetailRecord["computedStatus"]) {
-  if (status === "ended") return "Encerrado";
+  if (status === "past") return "Encerrado";
   if (status === "ongoing") return "Em andamento";
   if (status === "draft") return "Rascunho";
   if (status === "cancelled") return "Cancelado";
+  if (status === "published") return "Publicado";
   return "Ativo";
 }
 
 function statusPill(status: OrganizerEventDetailRecord["computedStatus"]) {
-  if (status === "ended") return "bg-gray-100 text-gray-700";
+  if (status === "past") return "bg-gray-100 text-gray-700";
   if (status === "ongoing") return "bg-amber-100 text-amber-900";
   if (status === "draft") return "bg-sky-100 text-sky-800";
   if (status === "cancelled") return "bg-red-100 text-red-700";
@@ -393,28 +400,10 @@ function formatLongDate(value: string) {
   });
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
+function Badge({ children }: { children: ReactNode }) {
   return (
     <span className="rounded-full bg-brand-teal/10 px-3 py-1 text-xs font-medium text-brand-teal">
       {children}
     </span>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
   );
 }

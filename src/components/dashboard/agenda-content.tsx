@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { IconButton } from "@/components/ui";
 import { type AgendaItem, getAgenda } from "@/lib/amparian-api";
 import { ApiError } from "@/lib/api";
 
@@ -154,23 +156,31 @@ export function AgendaContent() {
           <div className="w-full flex-shrink-0 xl:w-[380px]">
             <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-lg">
               <div className="mb-4 flex items-center justify-between">
-                <button
+                <IconButton
                   type="button"
+                  icon={
+                    <span className="flex h-4 w-4 items-center justify-center">
+                      <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                  }
+                  label="Mês anterior"
                   onClick={prevMonth}
-                  className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-                  aria-label="Mês anterior"
-                >
-                  <ChevronLeft />
-                </button>
+                  size="sm"
+                  variant="ghost"
+                />
                 <span className="text-base font-bold capitalize text-gray-900">{monthLabel}</span>
-                <button
+                <IconButton
                   type="button"
+                  icon={
+                    <span className="flex h-4 w-4 items-center justify-center">
+                      <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                  }
+                  label="Próximo mês"
                   onClick={nextMonth}
-                  className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-                  aria-label="Próximo mês"
-                >
-                  <ChevronRight />
-                </button>
+                  size="sm"
+                  variant="ghost"
+                />
               </div>
 
               <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-gray-400">
@@ -203,22 +213,6 @@ export function AgendaContent() {
         </div>
       </main>
     </DashboardShell>
-  );
-}
-
-function ChevronLeft() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  );
-}
-
-function ChevronRight() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="m9 18 6-6-6-6" />
-    </svg>
   );
 }
 

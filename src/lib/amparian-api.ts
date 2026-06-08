@@ -3,7 +3,15 @@ import { apiJson } from "@/lib/api";
 export type Plan = "basic" | "pro";
 export type EventTimeFilter = "upcoming" | "past" | "ongoing";
 export type RegistrationStatus = "pending" | "confirmed" | "cancelled";
-export type ComputedEventStatus = "draft" | "cancelled" | "active" | "ongoing" | "ended";
+export type ComputedEventStatus =
+  | "draft"
+  | "published"
+  | "cancelled"
+  | "upcoming"
+  | "ongoing"
+  | "past";
+
+type ApiComputedEventStatus = ComputedEventStatus | "active" | "ended";
 
 export type UserProfile = {
   id: number;
@@ -52,7 +60,7 @@ export type OrganizerEventSummary = {
   id: string;
   title: string;
   filter: EventTimeFilter;
-  statusLabel: "Ativo" | "Encerrado" | "Em andamento";
+  statusLabel: string;
   description: string;
   imageClassName: string;
   startsAt: string;
@@ -179,7 +187,8 @@ export async function getPublicEvents(q?: string): Promise<PublicEventSummary[]>
 }
 
 export async function getPublicEvent(eventId: number | string): Promise<PublicEventDetail> {
-  return apiJson<PublicEventDetail>(`/events/${eventId}`);
+  const event = await apiJson<PublicEventDetailApi>(`/events/${eventId}`);
+  return mapPublicEventDetail(event);
 }
 
 export async function registerForPublicEvent(
@@ -230,9 +239,13 @@ type OrganizerEventApi = {
   cover_image_url: string | null;
   highlight_skill: string | null;
   status: "draft" | "published" | "cancelled";
-  computedStatus: ComputedEventStatus;
+  computedStatus: ApiComputedEventStatus;
   types: LookupOption[];
   requirements: LookupOption[];
+};
+
+type PublicEventDetailApi = Omit<PublicEventDetail, "computedStatus"> & {
+  computedStatus: ApiComputedEventStatus;
 };
 
 export async function getOrganizerEvent(eventId: number | string): Promise<OrganizerEventDetail> {
@@ -295,8 +308,21 @@ function mapOrganizerEvent(event: OrganizerEventApi): OrganizerEventDetail {
     coverImageUrl: event.cover_image_url,
     highlightSkill: event.highlight_skill,
     status: event.status,
-    computedStatus: event.computedStatus,
+    computedStatus: normalizeComputedEventStatus(event.computedStatus),
     types: event.types,
     requirements: event.requirements,
   };
+}
+
+function mapPublicEventDetail(event: PublicEventDetailApi): PublicEventDetail {
+  return {
+    ...event,
+    computedStatus: normalizeComputedEventStatus(event.computedStatus),
+  };
+}
+
+function normalizeComputedEventStatus(status: ApiComputedEventStatus): ComputedEventStatus {
+  if (status === "active") return "upcoming";
+  if (status === "ended") return "past";
+  return status;
 }

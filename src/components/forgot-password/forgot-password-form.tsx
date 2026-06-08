@@ -6,17 +6,22 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import forgotPassPt1 from "@/assets/forgotPassPt1.jpg";
-import { ApiError, apiJson } from "@/lib/api";
+import { Button, FormAlert, FormField, TextInput } from "@/components/ui";
+import { apiJson, getApiFormError, type ApiFieldErrors } from "@/lib/api";
+
+type ForgotPasswordField = "email";
 
 export function ForgotPasswordForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<ForgotPasswordField>>({});
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     setLoading(true);
     try {
       await apiJson("/auth/forgot-password", {
@@ -26,11 +31,12 @@ export function ForgotPasswordForm() {
       });
       router.push("/esqueci-minha-senha/redefinir");
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Não foi possível enviar. Verifique se a API está rodando.");
-      }
+      const { fieldErrors: nextFieldErrors, formError } = getApiFormError<ForgotPasswordField>(
+        err,
+        "Não foi possível enviar. Verifique se a API está rodando.",
+      );
+      setFieldErrors(nextFieldErrors);
+      setError(formError);
       setLoading(false);
     }
   }
@@ -61,29 +67,37 @@ export function ForgotPasswordForm() {
         </p>
 
         <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-transparent bg-white/80 px-4 py-3 text-sm text-gray-700 placeholder-gray-500 outline-none focus:border-brand-teal focus:bg-white focus:ring-1 focus:ring-brand-teal"
-          />
+          <FormField error={fieldErrors.email}>
+            <TextInput
+              type="email"
+              placeholder="Email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFieldErrors((current) => ({ ...current, email: undefined }));
+              }}
+              error={fieldErrors.email}
+              variant="translucent"
+              className="px-4 py-3 text-sm"
+            />
+          </FormField>
 
-          {error && (
-            <p className="rounded-lg bg-red-50/80 px-3 py-2 text-center text-xs font-medium text-red-600">
-              {error}
-            </p>
-          )}
+          <FormAlert align="center" className="text-xs" variant="error">
+            {error}
+          </FormAlert>
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-brand-teal py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+            loading={loading}
+            loadingLabel="Enviando..."
+            fullWidth
+            className="py-3"
           >
-            {loading ? "Enviando..." : "Enviar link de recuperação"}
-          </button>
+            Enviar link de recuperação
+          </Button>
         </form>
 
         <p className="text-sm text-white">

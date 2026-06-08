@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { FormField, LinkButton, Textarea, TextInput } from "@/components/ui";
 import {
   type MyRegistration,
   type UserProfile,
@@ -12,6 +12,7 @@ import {
   getMyStats,
 } from "@/lib/amparian-api";
 import { ApiError } from "@/lib/api";
+import { formatBrazilianPhone } from "@/lib/phone";
 
 import { DashboardShell } from "./dashboard-shell";
 
@@ -89,7 +90,10 @@ export function ProfilesContent() {
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-4">
                   <ReadOnlyField label="Nome" value={profile?.name ?? ""} />
-                  <ReadOnlyField label="Telefone" value={profile?.phone ?? "Não informado"} />
+                  <ReadOnlyField
+                    label="Telefone"
+                    value={profile?.phone ? formatBrazilianPhone(profile.phone) : "Não informado"}
+                  />
                   <ReadOnlyField
                     label="Organização pública"
                     value={profile?.publicOrganizationName ?? "Não informado"}
@@ -151,19 +155,21 @@ export function ProfilesContent() {
               )}
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <Link
+                <LinkButton
                   href="/home/agenda"
-                  className="inline-flex w-full items-center justify-center rounded-lg bg-green-500 px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-green-600 sm:w-auto"
+                  className="w-full sm:w-auto"
+                  variant="success"
                 >
                   Ver minha agenda
-                </Link>
+                </LinkButton>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
-                  <Link
+                  <LinkButton
                     href="/home/configuracoes"
-                    className="inline-flex w-full items-center justify-center rounded-lg border-2 border-brand-teal bg-white px-4 py-2 text-sm font-semibold text-brand-teal hover:bg-brand-teal/5 sm:w-auto"
+                    className="w-full sm:w-auto"
+                    variant="secondary"
                   >
                     Editar perfil
-                  </Link>
+                  </LinkButton>
                 </div>
               </div>
             </section>
@@ -176,28 +182,26 @@ export function ProfilesContent() {
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-gray-500">{label}</span>
-      <input
+    <FormField label={label}>
+      <TextInput
         readOnly
         value={value}
-        className="rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm text-gray-800"
+        className="bg-gray-50/80 text-gray-800"
       />
-    </label>
+    </FormField>
   );
 }
 
 function ReadOnlyTextArea({ label, value }: { label: string; value: string }) {
   return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-gray-500">{label}</span>
-      <textarea
+    <FormField label={label}>
+      <Textarea
         readOnly
         rows={4}
         value={value}
-        className="resize-y rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm text-gray-800"
+        className="bg-gray-50/80 text-gray-800"
       />
-    </label>
+    </FormField>
   );
 }
 

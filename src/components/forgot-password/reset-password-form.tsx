@@ -5,21 +5,28 @@ import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 
 import forgotPassPt1 from "@/assets/forgotPassPt1.jpg";
-import { ApiError, apiJson } from "@/lib/api";
+import { Button, FormAlert, FormField, TextInput } from "@/components/ui";
+import { apiJson, getApiFormError, type ApiFieldErrors } from "@/lib/api";
+
+type ResetPasswordField = "password" | "confirm";
 
 export function ResetPasswordForm() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<ResetPasswordField>>({});
   const [loading, setLoading] = useState(false);
   const search = useSyncExternalStore(subscribeToLocation, getClientSearch, () => "");
   const token = new URLSearchParams(search).get("token") ?? "";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
+    setFieldErrors({});
+
     if (password !== confirm) {
-      setError("As senhas não coincidem.");
+      setFieldErrors({ confirm: "As senhas não coincidem." });
       return;
     }
     if (!token.trim()) {
@@ -27,7 +34,6 @@ export function ResetPasswordForm() {
       return;
     }
 
-    setError("");
     setLoading(true);
     try {
       await apiJson("/auth/reset-password", {
@@ -37,17 +43,23 @@ export function ResetPasswordForm() {
       });
       router.push("/login");
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Não foi possível atualizar. Verifique se a API está rodando.");
-      }
+      const { fieldErrors: nextFieldErrors, formError } = getApiFormError<ResetPasswordField>(
+        err,
+        "Não foi possível atualizar. Verifique se a API está rodando.",
+        {
+          fieldMap: {
+            "body.newPassword": "password",
+            "body.token": null,
+            newPassword: "password",
+            token: null,
+          },
+        },
+      );
+      setFieldErrors(nextFieldErrors);
+      setError(formError);
       setLoading(false);
     }
   }
-
-  const inputCls =
-    "w-full rounded-lg border border-transparent bg-white/80 px-4 py-3 text-sm text-gray-700 placeholder-gray-500 outline-none focus:border-brand-teal focus:bg-white focus:ring-1 focus:ring-brand-teal";
 
   return (
     <section className="relative flex min-h-[100dvh] items-center justify-center px-4 py-8 sm:px-6 sm:py-10">
@@ -75,40 +87,55 @@ export function ResetPasswordForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
-          <input
-            type="password"
-            placeholder="Digite nova senha"
-            autoComplete="new-password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={inputCls}
-          />
-          <input
-            type="password"
-            placeholder="Digite senha novamente"
-            autoComplete="new-password"
-            required
-            minLength={6}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            className={inputCls}
-          />
+          <FormField error={fieldErrors.password}>
+            <TextInput
+              type="password"
+              placeholder="Digite nova senha"
+              autoComplete="new-password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setFieldErrors((current) => ({ ...current, password: undefined }));
+              }}
+              error={fieldErrors.password}
+              variant="translucent"
+              className="px-4 py-3 text-sm"
+            />
+          </FormField>
+          <FormField error={fieldErrors.confirm}>
+            <TextInput
+              type="password"
+              placeholder="Digite senha novamente"
+              autoComplete="new-password"
+              required
+              minLength={6}
+              value={confirm}
+              onChange={(e) => {
+                setConfirm(e.target.value);
+                setFieldErrors((current) => ({ ...current, confirm: undefined }));
+              }}
+              error={fieldErrors.confirm}
+              variant="translucent"
+              className="px-4 py-3 text-sm"
+            />
+          </FormField>
 
-          {error && (
-            <p className="rounded-lg bg-red-50/80 px-3 py-2 text-center text-xs font-medium text-red-600">
-              {error}
-            </p>
-          )}
+          <FormAlert align="center" className="text-xs" variant="error">
+            {error}
+          </FormAlert>
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="mt-1 w-full rounded-lg bg-brand-teal py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+            loading={loading}
+            loadingLabel="Atualizando..."
+            fullWidth
+            className="mt-1 py-3"
           >
-            {loading ? "Atualizando..." : "Atualizar senha"}
-          </button>
+            Atualizar senha
+          </Button>
         </form>
       </div>
     </section>

@@ -7,15 +7,57 @@ import {
 } from "@/lib/auth/session";
 import { getApiBaseUrl } from "./config";
 
+export type ApiErrorFieldDetail = {
+  path: string;
+  code: string;
+  message: string;
+};
+
+export type ApiErrorDetails =
+  | {
+      fields?: ApiErrorFieldDetail[];
+      context?: Record<string, unknown>;
+    }
+  | Record<string, unknown>
+  | unknown[]
+  | null;
+
+type ApiErrorEnvelope = {
+  error?: {
+    code?: string;
+    message?: string;
+    details?: ApiErrorDetails;
+  };
+};
+
 export class ApiError extends Error {
   readonly status: number;
   readonly code?: string;
+  readonly details: ApiErrorDetails;
 
-  constructor(message: string, status: number, code?: string) {
+  constructor(
+    message: string,
+    status: number,
+    code?: string,
+    details: ApiErrorDetails = null,
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.details = details;
+  }
+
+  getFieldErrors(): ApiErrorFieldDetail[] {
+    return getApiErrorFields(this.details);
+  }
+
+  getFieldError(path: string): string | undefined {
+    return this.getFieldErrors().find((field) => field.path === path)?.message;
+  }
+
+  hasCode(code: string): boolean {
+    return this.code === code;
   }
 }
 
@@ -28,17 +70,56 @@ type ApiFetchOptions = RequestInit & {
 
 let refreshPromise: Promise<string | null> | null = null;
 
-async function parseJsonError(res: Response): Promise<never> {
+function getApiErrorFields(details: ApiErrorDetails): ApiErrorFieldDetail[] {
+  if (!details || Array.isArray(details) || typeof details !== "object") {
+    return [];
+  }
+
+  const fields = (details as { fields?: unknown }).fields;
+  if (!Array.isArray(fields)) {
+    return [];
+  }
+
+  return fields.filter(isApiErrorFieldDetail);
+}
+
+function isApiErrorFieldDetail(value: unknown): value is ApiErrorFieldDetail {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const field = value as Record<string, unknown>;
+  return (
+    typeof field.path === "string" &&
+    typeof field.code === "string" &&
+    typeof field.message === "string"
+  );
+}
+
+async function readApiError(res: Response): Promise<{
+  message: string;
+  code?: string;
+  details: ApiErrorDetails;
+}> {
   let message = res.statusText || "Erro na requisição";
   let code: string | undefined;
+  let details: ApiErrorDetails = null;
+
   try {
-    const j = (await res.json()) as { error?: { message?: string; code?: string } };
+    const j = (await res.json()) as ApiErrorEnvelope;
     if (j?.error?.message) message = j.error.message;
     if (j?.error?.code) code = j.error.code;
+    if ("details" in (j.error ?? {})) details = j.error?.details ?? null;
   } catch {
     /* ignore */
   }
-  throw new ApiError(message, res.status, code);
+
+  return { message, code, details };
+}
+
+async function parseJsonError(res: Response): Promise<never> {
+  const { message, code, details } = await readApiError(res);
+  throw new ApiError(message, res.status, code, details);
 }
 
 function clearAuthCookie(): void {
@@ -73,19 +154,6 @@ function buildHeaders(init: HeadersInit | undefined, body: JsonBody | undefined,
     if (token) h.set("Authorization", `Bearer ${token}`);
   }
   return h;
-}
-
-async function readApiError(res: Response): Promise<{ message: string; code?: string }> {
-  let message = res.statusText || "Erro na requisição";
-  let code: string | undefined;
-  try {
-    const j = (await res.json()) as { error?: { message?: string; code?: string } };
-    if (j?.error?.message) message = j.error.message;
-    if (j?.error?.code) code = j.error.code;
-  } catch {
-    /* ignore */
-  }
-  return { message, code };
 }
 
 async function refreshAccessToken(): Promise<string | null> {
@@ -153,6 +221,7 @@ export async function apiFetch(
         if (!retryRes.ok) await parseJsonError(retryRes);
         return retryRes;
       }
+      clearSessionAndRedirect();
     }
   }
 
