@@ -5,7 +5,9 @@ export function getApiBaseUrl(): string {
     if (process.env.NODE_ENV !== "production") {
       return "http://localhost:3001";
     }
-    throw new Error("NEXT_PUBLIC_API_URL não está configurada no ambiente de produção.");
+    throw new Error(
+      "NEXT_PUBLIC_API_URL não está configurada no ambiente de produção.",
+    );
   }
   return url.replace(/\/$/, "");
 }

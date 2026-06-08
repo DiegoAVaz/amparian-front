@@ -1,5 +1,9 @@
 "use client";
 
+import { X } from "lucide-react";
+
+import { Button, IconButton } from "@/components/ui";
+
 type Props = {
   onClose: () => void;
   eventTitle?: string;
@@ -18,14 +22,14 @@ export function PublishSuccessModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
       <div className="relative max-h-[92dvh] w-full max-w-sm overflow-y-auto rounded-t-2xl bg-white p-5 text-center shadow-xl sm:rounded-2xl sm:p-8">
-        <button
-          type="button"
-          onClick={onClose}
+        <IconButton
           className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 sm:right-4 sm:top-4"
-          aria-label="Fechar"
-        >
-          <XIcon />
-        </button>
+          icon={<X size={18} strokeWidth={2} aria-hidden="true" />}
+          label="Fechar"
+          onClick={onClose}
+          size="sm"
+          variant="ghost"
+        />
 
         <h2 className="text-xl font-bold text-brand-teal">Seu evento foi publicado!</h2>
         <p className="mt-1 text-sm font-semibold text-brand-teal">
@@ -51,58 +55,47 @@ export function PublishSuccessModal({
         <div className="mt-4 flex flex-col items-center gap-3">
           <p className="text-xs font-medium text-gray-600">Compartilhe nas redes sociais!</p>
           <div className="flex gap-3">
-            <button
+            <IconButton
               type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500 text-white transition-colors hover:bg-green-600"
-              aria-label="Compartilhar no WhatsApp"
-            >
-              <WhatsAppIcon />
-            </button>
-            <button
+              className="rounded-full bg-green-500 text-white hover:bg-green-600"
+              icon={<WhatsAppIcon />}
+              label="Compartilhar no WhatsApp"
+              size="sm"
+              variant="success"
+            />
+            <IconButton
               type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white transition-opacity hover:opacity-90"
-              aria-label="Compartilhar no Instagram"
-            >
-              <InstagramIcon />
-            </button>
+              className="rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white hover:opacity-90"
+              icon={<InstagramIcon />}
+              label="Compartilhar no Instagram"
+              size="sm"
+              variant="ghost"
+            />
           </div>
         </div>
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:gap-3">
-          <button
+          <Button
             type="button"
             onClick={onViewEvent}
-            className="w-full flex-1 rounded-lg bg-brand-teal py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover sm:w-auto"
+            className="flex-1"
+            disabled={!onViewEvent}
+            fullWidth
           >
             Ver meu evento
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={onClose}
-            className="w-full flex-1 rounded-lg border border-brand-teal py-2.5 text-sm font-semibold text-brand-teal transition-colors hover:bg-brand-teal/5 sm:w-auto"
+            className="flex-1"
+            fullWidth
+            variant="secondary"
           >
             Voltar
-          </button>
+          </Button>
         </div>
       </div>
     </div>
-  );
-}
-
-function XIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
   );
 }
 

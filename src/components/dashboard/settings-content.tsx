@@ -1,11 +1,28 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { setAuthCookie, updateStoredUser } from "@/lib/auth";
+import {
+  Button,
+  FormAlert,
+  FormField,
+  MutedUnderlineLink,
+  Textarea,
+  TextInput,
+} from "@/components/ui";
+import { updateStoredUser } from "@/lib/auth";
 import { getMyProfile, updateMyProfile, type UserProfile } from "@/lib/amparian-api";
-import { ApiError } from "@/lib/api";
+import {
+  ApiError,
+  getApiFormError,
+  type ApiErrorFieldMap,
+  type ApiFieldErrors,
+} from "@/lib/api";
+import {
+  formatBrazilianPhone,
+  getBrazilianPhoneDigits,
+  isValidBrazilianPhone,
+} from "@/lib/phone";
 
 import { DashboardShell } from "./dashboard-shell";
 
@@ -19,11 +36,21 @@ type FormState = {
   avatarUrl: string;
 };
 
+type ProfileField = keyof FormState;
+
+const PROFILE_FIELD_MAP: ApiErrorFieldMap<ProfileField> = {
+  public_organization_name: "publicOrganizationName",
+  publicOrganizationName: "publicOrganizationName",
+  avatar_url: "avatarUrl",
+  avatarUrl: "avatarUrl",
+};
+
 export function SettingsContent() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<ProfileField>>({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -39,7 +66,7 @@ export function SettingsContent() {
           setProfile(nextProfile);
           setForm({
             name: nextProfile.name,
-            phone: nextProfile.phone ?? "",
+            phone: nextProfile.phone ? formatBrazilianPhone(nextProfile.phone) : "",
             city: nextProfile.city ?? "",
             state: nextProfile.state ?? "",
             bio: nextProfile.bio ?? "",
@@ -65,14 +92,23 @@ export function SettingsContent() {
   const initials = useMemo(() => getInitials(form.name || profile?.name || ""), [form.name, profile]);
 
   async function handleSave() {
+    const localErrors = getLocalFieldErrors();
+    if (Object.keys(localErrors).length > 0) {
+      setFieldErrors(localErrors);
+      setSuccess("");
+      setError("Revise os campos destacados antes de salvar.");
+      return;
+    }
+
     setSaving(true);
     setError("");
     setSuccess("");
+    setFieldErrors({});
 
     try {
       const nextProfile = await updateMyProfile({
         name: form.name.trim(),
-        phone: nullable(form.phone),
+        phone: nullable(getBrazilianPhoneDigits(form.phone)),
         city: nullable(form.city),
         state: nullable(form.state)?.toUpperCase() ?? null,
         bio: nullable(form.bio),
@@ -81,11 +117,23 @@ export function SettingsContent() {
       });
 
       setProfile(nextProfile);
+      setForm((current) => ({
+        ...current,
+        phone: nextProfile.phone ? formatBrazilianPhone(nextProfile.phone) : "",
+      }));
       updateStoredUser({ name: nextProfile.name, email: nextProfile.email });
-      setAuthCookie(nextProfile.name);
       setSuccess("Perfil atualizado com sucesso.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Não foi possível salvar suas alterações.");
+      const {
+        fieldErrors: nextFieldErrors,
+        formError,
+      } = getApiFormError<ProfileField>(
+        err,
+        "Não foi possível salvar suas alterações.",
+        { fieldMap: PROFILE_FIELD_MAP },
+      );
+      setFieldErrors(nextFieldErrors);
+      setError(formError);
     } finally {
       setSaving(false);
     }
@@ -108,91 +156,94 @@ export function SettingsContent() {
               </div>
 
               <div className="flex min-w-0 flex-1 flex-col gap-4">
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-gray-500">Nome</span>
-                  <input
+                <FormField label="Nome" required error={fieldErrors.name}>
+                  <TextInput
                     value={form.name}
                     onChange={(e) => updateField("name", e.target.value)}
-                    className={inputCls}
+                    error={fieldErrors.name}
                   />
-                </label>
+                </FormField>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-gray-500">Telefone</span>
-                    <input
+                  <FormField label="Telefone" error={fieldErrors.phone}>
+                    <TextInput
                       value={form.phone}
-                      onChange={(e) => updateField("phone", e.target.value)}
-                      className={inputCls}
+                      onChange={(e) => updatePhoneField(e.target.value)}
+                      inputMode="numeric"
+                      placeholder="(DDD) xxxxx-xxxx ou (DDD) xxxx-xxxx"
+                      error={fieldErrors.phone}
                     />
-                  </label>
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-gray-500">Email</span>
-                    <input
+                  </FormField>
+                  <FormField label="Email">
+                    <TextInput
                       value={profile?.email ?? ""}
                       readOnly
-                      className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-500"
+                      className="bg-gray-50 text-gray-500"
                     />
-                  </label>
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-gray-500">Cidade</span>
-                    <input
+                  </FormField>
+                  <FormField label="Cidade" error={fieldErrors.city}>
+                    <TextInput
                       value={form.city}
                       onChange={(e) => updateField("city", e.target.value)}
-                      className={inputCls}
+                      error={fieldErrors.city}
                     />
-                  </label>
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-gray-500">UF</span>
-                    <input
+                  </FormField>
+                  <FormField label="UF" error={fieldErrors.state}>
+                    <TextInput
                       maxLength={2}
                       value={form.state}
                       onChange={(e) => updateField("state", e.target.value.toUpperCase())}
-                      className={inputCls}
+                      error={fieldErrors.state}
                     />
-                  </label>
-                  <label className="flex flex-col gap-1.5 sm:col-span-2">
-                    <span className="text-xs font-medium text-gray-500">Nome público da organização</span>
-                    <input
+                  </FormField>
+                  <FormField
+                    label="Nome público da organização"
+                    className="sm:col-span-2"
+                    error={fieldErrors.publicOrganizationName}
+                  >
+                    <TextInput
                       value={form.publicOrganizationName}
                       onChange={(e) => updateField("publicOrganizationName", e.target.value)}
-                      className={inputCls}
+                      error={fieldErrors.publicOrganizationName}
                     />
-                  </label>
-                  <label className="flex flex-col gap-1.5 sm:col-span-2">
-                    <span className="text-xs font-medium text-gray-500">URL do avatar</span>
-                    <input
+                  </FormField>
+                  <FormField
+                    label="URL do avatar"
+                    className="sm:col-span-2"
+                    error={fieldErrors.avatarUrl}
+                  >
+                    <TextInput
+                      type="url"
                       value={form.avatarUrl}
                       onChange={(e) => updateField("avatarUrl", e.target.value)}
-                      className={inputCls}
+                      error={fieldErrors.avatarUrl}
                     />
-                  </label>
+                  </FormField>
                 </div>
 
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-gray-500">Descrição</span>
-                  <textarea
+                <FormField label="Descrição" error={fieldErrors.bio}>
+                  <Textarea
                     value={form.bio}
                     onChange={(e) => updateField("bio", e.target.value)}
                     rows={4}
-                    className={`${inputCls} resize-y`}
+                    error={fieldErrors.bio}
                   />
-                </label>
+                </FormField>
 
-                {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-                {success && (
-                  <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{success}</p>
-                )}
+                <FormAlert variant="error">{error}</FormAlert>
+                <FormAlert variant="success">{success}</FormAlert>
 
                 <div className="flex pt-2 sm:justify-end">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => void handleSave()}
                     disabled={saving || loading}
-                    className="w-full rounded-lg bg-brand-teal px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-teal-hover disabled:opacity-60 sm:w-auto"
+                    className="w-full sm:w-auto"
+                    loading={saving}
+                    loadingLabel="Salvando..."
                   >
-                    {saving ? "Salvando..." : "Salvar detalhes da conta"}
-                  </button>
+                    Salvar detalhes da conta
+                  </Button>
                 </div>
               </div>
             </div>
@@ -204,14 +255,14 @@ export function SettingsContent() {
             <h2 className="text-sm font-bold text-brand-teal">Segurança e acesso</h2>
             <ul className="mt-3 flex flex-col gap-2 text-sm">
               <li>
-                <Link href="/home/em-breve" className="text-brand-teal underline hover:no-underline">
+                <MutedUnderlineLink href="/home/em-breve">
                   Alterar senha
-                </Link>
+                </MutedUnderlineLink>
               </li>
               <li>
-                <Link href="/home/em-breve" className="text-brand-teal underline hover:no-underline">
+                <MutedUnderlineLink href="/home/em-breve">
                   Alterar email
-                </Link>
+                </MutedUnderlineLink>
               </li>
             </ul>
           </section>
@@ -221,22 +272,28 @@ export function SettingsContent() {
             <p className="mt-3 text-sm text-gray-700">
               Seu plano é <span className="font-semibold">{profile?.plan === "pro" ? "Pro" : "Básico"}</span>.
             </p>
-            <Link
+            <MutedUnderlineLink
               href="/home/em-breve"
-              className="mt-3 inline-block text-sm text-brand-teal underline hover:no-underline"
+              className="mt-3 inline-block"
             >
               Gerenciar plano
-            </Link>
+            </MutedUnderlineLink>
+            <MutedUnderlineLink
+              href="/home/configuracoes/cartoes"
+              className="mt-2 block"
+            >
+              Gerenciar cartões
+            </MutedUnderlineLink>
           </section>
 
           <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-bold text-brand-teal">Idioma</h2>
-            <Link
+            <MutedUnderlineLink
               href="/home/em-breve"
-              className="mt-3 inline-block text-sm text-brand-teal underline hover:no-underline"
+              className="mt-3 inline-block"
             >
               Gerenciar idioma
-            </Link>
+            </MutedUnderlineLink>
           </section>
         </div>
       </main>
@@ -245,11 +302,34 @@ export function SettingsContent() {
 
   function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [field]: value }));
+    setFieldErrors((current) => ({ ...current, [field]: undefined }));
+    setSuccess("");
+  }
+
+  function updatePhoneField(value: string) {
+    setForm((current) => ({ ...current, phone: value }));
+    setFieldErrors((current) => ({
+      ...current,
+      phone:
+        value.trim() && getBrazilianPhoneDigits(value).length > 11
+          ? "Informe no máximo 11 dígitos para telefone ou celular."
+          : undefined,
+    }));
+    setSuccess("");
+  }
+
+  function getLocalFieldErrors(): ApiFieldErrors<ProfileField> {
+    const nextErrors: ApiFieldErrors<ProfileField> = {};
+    if (!form.name.trim()) nextErrors.name = "Informe seu nome.";
+    if (form.phone.trim() && !isValidBrazilianPhone(form.phone)) {
+      nextErrors.phone = "Informe o telefone no formato (DDD) xxxxx-xxxx ou (DDD) xxxx-xxxx.";
+    }
+    if (form.state.trim() && form.state.trim().length !== 2) {
+      nextErrors.state = "Informe a UF com 2 letras.";
+    }
+    return nextErrors;
   }
 }
-
-const inputCls =
-  "rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal";
 
 const emptyForm: FormState = {
   name: "",

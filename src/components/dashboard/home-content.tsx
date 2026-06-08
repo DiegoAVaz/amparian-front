@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
+  Button,
+  SearchInput,
+} from "@/components/ui";
+import {
   type OrganizerEventDetail,
   type UserStats,
   getMyProfile,
@@ -65,7 +69,10 @@ export function HomeContent() {
         const nextEvents = await getPublicEvents(query);
         if (!cancelled) {
           setEvents(nextEvents);
-          if (!selectedEvent && nextEvents[0]) setSelectedEvent(nextEvents[0]);
+          setSelectedEvent((current) => {
+            if (current && nextEvents.some((event) => event.id === current.id)) return current;
+            return nextEvents[0] ?? null;
+          });
         }
       } catch (err) {
         if (!cancelled) {
@@ -84,7 +91,7 @@ export function HomeContent() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [query, selectedEvent]);
+  }, [query]);
 
   function openDetail(event: EventSummary) {
     setSelectedEvent(event);
@@ -135,13 +142,14 @@ export function HomeContent() {
                 Você sabia que pode criar seu próprio evento?
               </p>
               <p className="text-xs text-white/70">Seja mudança, comece um movimento!</p>
-              <button
+              <Button
                 type="button"
                 onClick={() => setModal("create-event")}
-                className="rounded-lg bg-green-500 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-600"
+                variant="success"
+                size="sm"
               >
                 Criar evento
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -154,16 +162,12 @@ export function HomeContent() {
                 {userName && <span className="text-xs text-gray-500">por {userName}</span>}
               </div>
 
-              <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                <SearchIcon />
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Pesquise por evento, ONG ou habilidade"
-                  className="min-w-0 flex-1 text-sm text-gray-500 outline-none placeholder:text-gray-400"
-                />
-              </div>
+              <SearchInput
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onClear={() => setQuery("")}
+                placeholder="Pesquise por evento, ONG ou habilidade"
+              />
 
               {loading ? (
                 <p className="rounded-xl bg-white px-4 py-8 text-center text-sm text-gray-500 shadow-sm">
@@ -201,13 +205,14 @@ export function HomeContent() {
                             {event.isRemote ? "Remoto" : event.locationName ?? "Local a confirmar"}
                           </p>
                         </div>
-                        <button
+                        <Button
                           type="button"
                           onClick={() => openDetail(event)}
-                          className="w-full shrink-0 rounded-lg bg-brand-teal px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-teal-hover sm:w-auto"
+                          className="w-full shrink-0 sm:w-auto"
+                          size="sm"
                         >
                           Ver detalhes
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -265,24 +270,5 @@ export function HomeContent() {
         )}
       </>
     </DashboardShell>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="text-gray-400"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
   );
 }

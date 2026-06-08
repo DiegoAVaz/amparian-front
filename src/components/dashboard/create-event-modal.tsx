@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
 
+import {
+  Button,
+  Checkbox,
+  CheckboxGroup,
+  FormAlert,
+  FormField,
+  IconButton,
+  Textarea,
+  TextInput,
+} from "@/components/ui";
 import {
   type EventFormInput,
   type LookupOption,
@@ -10,7 +21,7 @@ import {
   getLookups,
   updateOrganizerEvent,
 } from "@/lib/amparian-api";
-import { ApiError } from "@/lib/api";
+import { getApiFormError, type ApiErrorFieldMap, type ApiFieldErrors } from "@/lib/api";
 
 type Props = {
   onClose: () => void;
@@ -37,6 +48,8 @@ type FormState = {
   requirementCodes: string[];
 };
 
+type EventFormField = keyof FormState;
+
 const EMPTY_FORM: FormState = {
   title: "",
   summary: "",
@@ -55,11 +68,19 @@ const EMPTY_FORM: FormState = {
   requirementCodes: [],
 };
 
+const EVENT_FIELD_MAP: ApiErrorFieldMap<EventFormField> = {
+  startsAt: "eventDate",
+  "body.startsAt": "eventDate",
+  endsAt: "endDate",
+  "body.endsAt": "endDate",
+};
+
 export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Props) {
   const [form, setForm] = useState<FormState>(() => mapEventToForm(initialEvent));
   const [loading, setLoading] = useState(false);
   const [loadingLookups, setLoadingLookups] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<EventFormField>>({});
   const [eventTypeOptions, setEventTypeOptions] = useState<LookupOption[]>([]);
   const [requirementOptions, setRequirementOptions] = useState<LookupOption[]>([]);
 
@@ -81,12 +102,16 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
   }, []);
 
   async function handleSubmit(publish: boolean) {
-    if (!canSubmit) {
-      setError("Preencha título, resumo, data, horário e ao menos um tipo de evento.");
+    const localErrors = getRequiredFieldErrors();
+
+    if (!canSubmit || Object.keys(localErrors).length > 0) {
+      setFieldErrors(localErrors);
+      setError("Preencha os campos obrigatórios para salvar o evento.");
       return;
     }
 
     setError("");
+    setFieldErrors({});
     setLoading(true);
 
     const payload: EventFormInput = {
@@ -95,8 +120,7 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
       description: nullable(form.description),
       rulesTerms: nullable(form.rulesTerms),
       startsAt: combineDateTime(form.eventDate, form.eventTime),
-      endsAt:
-        form.endDate && form.endTime ? combineDateTime(form.endDate, form.endTime) : null,
+      endsAt: form.endDate && form.endTime ? combineDateTime(form.endDate, form.endTime) : null,
       locationName: nullable(form.locationName),
       isRemote: form.isRemote,
       capacity: form.capacity.trim() ? Number(form.capacity) : null,
@@ -112,12 +136,18 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
         ? await updateOrganizerEvent(initialEvent.id, payload)
         : await createOrganizerEvent(payload);
       onSaved(event, publish ? "published" : "draft");
-      onClose();
     } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : "Não foi possível salvar o evento agora.";
-      setError(message);
-      onError(message);
+      const {
+        fieldErrors: nextFieldErrors,
+        formError,
+      } = getApiFormError<EventFormField>(
+        err,
+        "Não foi possível salvar o evento agora.",
+        { fieldMap: EVENT_FIELD_MAP },
+      );
+      setFieldErrors(nextFieldErrors);
+      setError(formError);
+      if (formError) onError(formError);
       setLoading(false);
       return;
     }
@@ -128,185 +158,197 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
       <div className="relative max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:rounded-2xl sm:p-8">
-        <button
-          type="button"
+        <IconButton
+          className="absolute right-4 top-4 text-gray-400 hover:bg-transparent hover:text-gray-500"
+          icon={<X size={20} strokeWidth={2} aria-hidden="true" />}
+          label="Fechar"
           onClick={onClose}
-          className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
-          aria-label="Fechar"
-        >
-          <XIcon />
-        </button>
+          size="sm"
+          variant="ghost"
+        />
 
         <h2 className="mb-6 text-xl font-bold text-brand-teal">{title}</h2>
 
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
           <div className="flex min-w-0 flex-1 flex-col gap-4">
-            <Field label="Título do evento *">
-              <input
+            <FormField label="Título do evento" required error={fieldErrors.title}>
+              <TextInput
                 type="text"
                 value={form.title}
                 onChange={(e) => updateField("title", e.target.value)}
                 placeholder="Ex: Mutirão de limpeza na praia do Sal"
-                className={inputCls}
+                error={fieldErrors.title}
               />
-            </Field>
+            </FormField>
 
-            <Field label="Resumo do evento *">
-              <textarea
+            <FormField label="Resumo do evento" required error={fieldErrors.summary}>
+              <Textarea
                 rows={3}
                 value={form.summary}
                 onChange={(e) => updateField("summary", e.target.value)}
                 placeholder="Descreva rapidamente o propósito do evento."
-                className={`${inputCls} resize-none`}
+                error={fieldErrors.summary}
+                resize="none"
               />
-            </Field>
+            </FormField>
 
-            <Field label="Descrição">
-              <textarea
+            <FormField label="Descrição" error={fieldErrors.description}>
+              <Textarea
                 rows={3}
                 value={form.description}
                 onChange={(e) => updateField("description", e.target.value)}
                 placeholder="Detalhes completos para os voluntários."
-                className={`${inputCls} resize-none`}
+                error={fieldErrors.description}
+                resize="none"
               />
-            </Field>
+            </FormField>
 
-            <Field label="Regras e termos">
-              <textarea
+            <FormField label="Regras e termos" error={fieldErrors.rulesTerms}>
+              <Textarea
                 rows={3}
                 value={form.rulesTerms}
                 onChange={(e) => updateField("rulesTerms", e.target.value)}
                 placeholder="Orientações de participação e responsabilidade."
-                className={`${inputCls} resize-none`}
+                error={fieldErrors.rulesTerms}
+                resize="none"
               />
-            </Field>
+            </FormField>
 
-            <Field label="Data e local *">
+            <FormField
+              label="Data e local"
+              required
+              error={fieldErrors.eventDate || fieldErrors.eventTime || fieldErrors.locationName}
+            >
               <div className="flex flex-col gap-2 sm:flex-row">
-                <input
+                <TextInput
                   type="date"
                   value={form.eventDate}
                   onChange={(e) => updateField("eventDate", e.target.value)}
-                  className={inputCls}
+                  error={fieldErrors.eventDate}
                 />
-                <input
+                <TextInput
                   type="time"
                   value={form.eventTime}
                   onChange={(e) => updateField("eventTime", e.target.value)}
-                  className={`${inputCls} sm:w-32`}
+                  error={fieldErrors.eventTime}
+                  className="sm:w-32"
                 />
               </div>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                <input
+                <TextInput
                   type="text"
                   value={form.locationName}
                   onChange={(e) => updateField("locationName", e.target.value)}
                   placeholder="Local"
-                  className={`${inputCls} flex-1`}
+                  error={fieldErrors.locationName}
+                  className="flex-1"
                 />
-                <label className="flex items-center gap-1.5 text-xs text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={form.isRemote}
-                    onChange={(e) => updateField("isRemote", e.target.checked)}
-                    className="accent-brand-teal"
-                  />
-                  Remoto
-                </label>
+                <Checkbox
+                  checked={form.isRemote}
+                  onChange={(e) => updateField("isRemote", e.target.checked)}
+                  label="Remoto"
+                  className="mt-0"
+                />
               </div>
-            </Field>
+            </FormField>
 
-            <Field label="Encerramento (opcional)">
+            <FormField
+              label="Encerramento (opcional)"
+              error={fieldErrors.endDate || fieldErrors.endTime}
+            >
               <div className="flex flex-col gap-2 sm:flex-row">
-                <input
+                <TextInput
                   type="date"
                   value={form.endDate}
                   onChange={(e) => updateField("endDate", e.target.value)}
-                  className={inputCls}
+                  error={fieldErrors.endDate}
                 />
-                <input
+                <TextInput
                   type="time"
                   value={form.endTime}
                   onChange={(e) => updateField("endTime", e.target.value)}
-                  className={`${inputCls} sm:w-32`}
+                  error={fieldErrors.endTime}
+                  className="sm:w-32"
                 />
               </div>
-            </Field>
+            </FormField>
 
-            <Field label="Requisitos">
-              <CheckboxGroup
-                options={requirementOptions}
-                values={form.requirementCodes}
-                onToggle={(code) => toggleArrayValue("requirementCodes", code)}
-              />
-            </Field>
+            <CheckboxGroup
+              legend="Requisitos"
+              options={toCheckboxOptions(requirementOptions)}
+              values={form.requirementCodes}
+              onChange={(values) => updateField("requirementCodes", values)}
+              error={fieldErrors.requirementCodes}
+            />
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Quantidade de vagas">
-                <input
+              <FormField label="Quantidade de vagas" error={fieldErrors.capacity}>
+                <TextInput
                   type="number"
                   min={1}
                   value={form.capacity}
                   onChange={(e) => updateField("capacity", e.target.value)}
-                  className={inputCls}
+                  error={fieldErrors.capacity}
                 />
-              </Field>
-              <Field label="Habilidade em destaque">
-                <input
+              </FormField>
+              <FormField label="Habilidade em destaque" error={fieldErrors.highlightSkill}>
+                <TextInput
                   type="text"
                   value={form.highlightSkill}
                   onChange={(e) => updateField("highlightSkill", e.target.value)}
                   placeholder="Ex: Consciência ambiental"
-                  className={inputCls}
+                  error={fieldErrors.highlightSkill}
                 />
-              </Field>
-              <Field label="URL da capa">
-                <input
+              </FormField>
+              <FormField label="URL da capa" error={fieldErrors.coverImageUrl}>
+                <TextInput
                   type="url"
                   value={form.coverImageUrl}
                   onChange={(e) => updateField("coverImageUrl", e.target.value)}
                   placeholder="https://..."
-                  className={inputCls}
+                  error={fieldErrors.coverImageUrl}
                 />
-              </Field>
+              </FormField>
             </div>
 
-            {error && (
-              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
-            )}
+            <FormAlert variant="error">{error}</FormAlert>
           </div>
 
           <div className="w-full flex-shrink-0 border-t border-gray-100 pt-4 lg:w-56 lg:border-t-0 lg:pt-0">
-            <p className="mb-2 text-xs font-medium text-brand-teal">Tipo de evento *</p>
             {loadingLookups && (
               <p className="mb-2 text-xs text-gray-500">Carregando opções...</p>
             )}
             <CheckboxGroup
-              options={eventTypeOptions}
+              legend="Tipo de evento"
+              options={toCheckboxOptions(eventTypeOptions)}
               values={form.typeCodes}
-              onToggle={(code) => toggleArrayValue("typeCodes", code)}
+              onChange={(values) => updateField("typeCodes", values)}
               className="max-h-72 overflow-y-auto pr-1"
+              error={fieldErrors.typeCodes}
             />
           </div>
         </div>
 
         <div className="mt-8 flex flex-col items-stretch gap-2 sm:items-end">
-          <button
+          <Button
             type="button"
             disabled={loading}
+            loading={loading}
+            loadingLabel="Salvando..."
             onClick={() => void handleSubmit(true)}
-            className="w-full rounded-lg bg-brand-teal px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-hover disabled:opacity-60 sm:w-auto"
+            className="w-full px-6 py-2.5 sm:w-auto"
           >
-            {loading ? "Salvando..." : primaryLabel}
-          </button>
-          <button
+            {primaryLabel}
+          </Button>
+          <Button
             type="button"
             disabled={loading}
             onClick={() => void handleSubmit(false)}
-            className="text-xs text-gray-500 hover:underline disabled:opacity-60"
+            variant="link"
+            size="sm"
           >
             Salvar rascunho
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -314,18 +356,7 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
 
   function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [field]: value }));
-  }
-
-  function toggleArrayValue(field: "typeCodes" | "requirementCodes", value: string) {
-    setForm((current) => {
-      const hasValue = current[field].includes(value);
-      return {
-        ...current,
-        [field]: hasValue
-          ? current[field].filter((item) => item !== value)
-          : [...current[field], value],
-      };
-    });
+    setFieldErrors((current) => ({ ...current, [field]: undefined }));
   }
 
   async function loadLookups() {
@@ -342,51 +373,25 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
       setLoadingLookups(false);
     }
   }
+
+  function getRequiredFieldErrors(): ApiFieldErrors<EventFormField> {
+    const nextErrors: ApiFieldErrors<EventFormField> = {};
+    if (!form.title.trim()) nextErrors.title = "Informe o título do evento.";
+    if (!form.summary.trim()) nextErrors.summary = "Informe o resumo do evento.";
+    if (!form.eventDate) nextErrors.eventDate = "Informe a data do evento.";
+    if (!form.eventTime) nextErrors.eventTime = "Informe o horário do evento.";
+    if (form.typeCodes.length === 0) {
+      nextErrors.typeCodes = "Informe ao menos um tipo de evento.";
+    }
+    return nextErrors;
+  }
 }
 
-function CheckboxGroup({
-  options,
-  values,
-  onToggle,
-  className = "",
-}: {
-  options: LookupOption[];
-  values: string[];
-  onToggle: (value: string) => void;
-  className?: string;
-}) {
-  return (
-    <div className={`flex flex-wrap gap-x-4 gap-y-2 ${className}`}>
-      {options.map((option) => (
-        <label key={option.code} className="flex items-center gap-1.5 text-xs text-gray-600">
-          <input
-            type="checkbox"
-            checked={values.includes(option.code)}
-            onChange={() => onToggle(option.code)}
-            className="accent-brand-teal"
-          />
-          {option.label}
-        </label>
-      ))}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  children,
-  className = "",
-}: {
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={`flex flex-col gap-1 ${className}`}>
-      <p className="text-xs font-medium text-brand-teal">{label}</p>
-      {children}
-    </div>
-  );
+function toCheckboxOptions(options: LookupOption[]) {
+  return options.map((option) => ({
+    label: option.label,
+    value: option.code,
+  }));
 }
 
 function mapEventToForm(event?: OrganizerEventDetail | null): FormState {
@@ -429,24 +434,4 @@ function combineDateTime(date: string, time: string) {
 function nullable(value: string): string | null {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
-}
-
-const inputCls =
-  "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal";
-
-function XIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
 }

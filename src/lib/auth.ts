@@ -12,7 +12,7 @@ export {
   updateStoredUser,
 } from "./auth/session";
 
-/** Cookie lido pelo middleware para proteger /home (presença de sessão). */
+/** Cookie lido pelo proxy para proteger /home (presença de sessão). */
 export function setAuthCookie(displayName: string) {
   const maxAge = 60 * 60 * 24 * 7;
   document.cookie = `amparian_auth=${encodeURIComponent(displayName)}; path=/; max-age=${maxAge}; SameSite=Lax`;
@@ -22,7 +22,7 @@ export function clearAuthCookie() {
   document.cookie = "amparian_auth=; path=/; max-age=0";
 }
 
-/** Remove tokens, dados locais e cookie de sessão (logout completo). */
+/** Remove tokens, dados locais e cookie marcador de sessão. */
 export function clearSession() {
   clearSessionStorage();
   clearAuthCookie();
