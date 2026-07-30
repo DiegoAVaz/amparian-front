@@ -9,7 +9,7 @@ export const buttonStyles = tv({
       "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
       "disabled:pointer-events-none disabled:opacity-60",
     ],
-    icon: "shrink-0",
+    icon: "inline-flex shrink-0 items-center justify-center",
     spinner:
       "shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent",
   },
@@ -154,4 +154,3 @@ export function Button({
     </button>
   );
 }
-

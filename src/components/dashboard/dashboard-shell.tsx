@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { Button, IconButton } from "@/components/ui";
+import { BrandShield, IconButton } from "@/components/ui";
 import { getStoredUser, logoutAndClear } from "@/lib/auth";
 import {
   AgendaNavIcon,
@@ -17,7 +17,6 @@ import {
   MenuIcon,
   PerfisNavIcon,
   SettingsNavIcon,
-  ShieldIcon,
   UserIcon,
 } from "./dashboard-shell-icons";
 
@@ -81,7 +80,7 @@ export function DashboardShell({ activeNav, children }: Props) {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-[#f0f8fa]">
+    <div className="flex min-h-[100dvh] flex-col bg-surface-canvas">
       <header className="flex shrink-0 items-center justify-between gap-3 bg-brand-teal px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-2">
           <IconButton
@@ -92,11 +91,11 @@ export function DashboardShell({ activeNav, children }: Props) {
             icon={mobileNavOpen ? <CloseIcon /> : <MenuIcon />}
             label={mobileNavOpen ? "Fechar menu" : "Abrir menu"}
             onClick={() => setMobileNavOpen((o) => !o)}
-            size="sm"
+            size="md"
             variant="ghost"
           />
           <div className="flex min-w-0 items-center gap-2">
-            <ShieldIcon variant="white" size={28} />
+            <BrandShield variant="white" size={28} />
             <span className="truncate text-base font-bold text-white sm:text-lg">
               Amparian
             </span>
@@ -108,7 +107,7 @@ export function DashboardShell({ activeNav, children }: Props) {
           </span>
           <Link
             href="/home/perfis"
-            className="text-white/90 hover:text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-white/90 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             aria-label="Meu perfil"
             onClick={closeMobileNav}
           >
@@ -119,7 +118,7 @@ export function DashboardShell({ activeNav, children }: Props) {
             className="text-white/80 hover:bg-white/10 hover:text-white"
             icon={<BellIcon />}
             label="Notificações"
-            size="sm"
+            size="md"
             variant="ghost"
           />
         </div>
@@ -151,7 +150,7 @@ export function DashboardShell({ activeNav, children }: Props) {
               icon={<CloseIcon />}
               label="Fechar menu"
               onClick={closeMobileNav}
-              size="sm"
+              size="md"
               variant="ghost"
             />
           </div>
@@ -223,6 +222,20 @@ function subscribeToSession(onStoreChange: () => void) {
   return () => window.removeEventListener("storage", onStoreChange);
 }
 
+const SIDEBAR_ROW =
+  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors";
+const SIDEBAR_ROW_INTERACTION =
+  "cursor-pointer active:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+const SIDEBAR_ROW_ACTIVE = "bg-brand-teal text-white shadow-sm";
+
+function SidebarRowIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+      {children}
+    </span>
+  );
+}
+
 function SidebarLink({
   href,
   icon,
@@ -241,13 +254,14 @@ function SidebarLink({
       href={href}
       onClick={onNavigate}
       className={[
-        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors active:bg-gray-50",
+        SIDEBAR_ROW,
+        SIDEBAR_ROW_INTERACTION,
         active
-          ? "bg-brand-teal text-white shadow-sm"
-          : "text-gray-600 hover:bg-gray-100",
+          ? `${SIDEBAR_ROW_ACTIVE} focus-visible:outline-brand-teal`
+          : "text-gray-600 hover:bg-gray-100 focus-visible:outline-gray-400",
       ].join(" ")}
     >
-      {icon}
+      <SidebarRowIcon>{icon}</SidebarRowIcon>
       <span className="truncate">{label}</span>
     </Link>
   );
@@ -267,21 +281,21 @@ function SidebarItem({
   onClick?: () => void;
 }) {
   return (
-    <Button
+    <button
       type="button"
       onClick={onClick}
       className={[
-        "w-full justify-start px-3 py-2.5 text-left",
+        SIDEBAR_ROW,
+        SIDEBAR_ROW_INTERACTION,
         active
-          ? "bg-brand-teal/10 text-brand-teal hover:bg-brand-teal/10"
+          ? `${SIDEBAR_ROW_ACTIVE} focus-visible:outline-brand-teal`
           : danger
-            ? "text-red-500 hover:bg-red-50"
-            : "text-gray-600 hover:bg-gray-100",
+            ? "text-red-500 hover:bg-red-50 focus-visible:outline-red-500"
+            : "text-gray-600 hover:bg-gray-100 focus-visible:outline-gray-400",
       ].join(" ")}
-      leftIcon={icon}
-      variant="ghost"
     >
+      <SidebarRowIcon>{icon}</SidebarRowIcon>
       <span className="truncate">{label}</span>
-    </Button>
+    </button>
   );
 }

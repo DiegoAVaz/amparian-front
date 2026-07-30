@@ -22,11 +22,7 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
       <div className="relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:rounded-2xl sm:p-6">
         <IconButton
           className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-transparent hover:text-gray-500"
-          icon={
-            <span className="flex h-4 w-4 items-center justify-center">
-              <X size={20} strokeWidth={2} aria-hidden="true" />
-            </span>
-          }
+          icon={<X size={16} strokeWidth={2} aria-hidden="true" />}
           label="Fechar"
           onClick={onClose}
           size="sm"

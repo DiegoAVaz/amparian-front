@@ -1,124 +1,203 @@
 "use client";
 
-import Image from "next/image";
+import { Mail } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import forgotPassPt1 from "@/assets/forgotPassPt1.jpg";
-import { Button, FormAlert, FormField, TextInput } from "@/components/ui";
-import { apiJson, getApiFormError, type ApiFieldErrors } from "@/lib/api";
+import {
+  Button,
+  FormAlert,
+  FormField,
+  PanelBadge,
+  TextInput,
+} from "@/components/ui";
+import {
+  ApiError,
+  apiJson,
+  getApiFormError,
+  type ApiFieldErrors,
+} from "@/lib/api";
+import { AuthCard, FocusPanel } from "./auth-card";
 
 type ForgotPasswordField = "email";
 
-export function ForgotPasswordForm() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<ForgotPasswordField>>({});
-  const [loading, setLoading] = useState(false);
+const RESEND_COOLDOWN_SECONDS = 60;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+export function ForgotPasswordForm() {
+  const [email, setEmail] = useState("");
+  const [sentTo, setSentTo] = useState("");
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    ApiFieldErrors<ForgotPasswordField>
+  >({});
+  const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setTimeout(() => setCooldown(cooldown - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [cooldown]);
+
+  async function requestLink(target: string) {
     setError("");
     setFieldErrors({});
     setLoading(true);
     try {
       await apiJson("/auth/forgot-password", {
         method: "POST",
-        json: { email },
+        json: { email: target },
         auth: false,
       });
-      router.push("/esqueci-minha-senha/redefinir");
+      setSentTo(target);
+      setCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (err) {
-      const { fieldErrors: nextFieldErrors, formError } = getApiFormError<ForgotPasswordField>(
-        err,
-        "Não foi possível enviar. Verifique se a API está rodando.",
-      );
-      setFieldErrors(nextFieldErrors);
-      setError(formError);
+      if (err instanceof ApiError && err.status === 429) {
+        setError(
+          "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+        );
+        setCooldown(RESEND_COOLDOWN_SECONDS);
+      } else {
+        const { fieldErrors: nextFieldErrors, formError } =
+          getApiFormError<ForgotPasswordField>(
+            err,
+            "Não foi possível enviar. Verifique se a API está rodando.",
+          );
+        setFieldErrors(nextFieldErrors);
+        setError(formError || (sentTo ? (nextFieldErrors.email ?? "") : ""));
+      }
+    } finally {
       setLoading(false);
     }
   }
 
-  return (
-    <section className="relative flex min-h-[100dvh] items-center justify-center px-4 py-8 sm:px-6 sm:py-10">
-      <div className="absolute inset-0">
-        <Image
-          src={forgotPassPt1}
-          alt=""
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-black/40" />
-      </div>
+  const blocked = loading || cooldown > 0;
 
-      <div className="relative flex w-full max-w-lg flex-col items-center gap-6 rounded-2xl bg-white/30 px-5 py-8 backdrop-blur-sm sm:px-10 sm:py-10">
-        <div className="flex items-center gap-3">
-          <ShieldIcon />
-          <span className="text-2xl font-bold text-brand-teal">Amparian</span>
-        </div>
+  if (sentTo) {
+    return (
+      <AuthCard>
+        <FocusPanel>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <PanelBadge tone="teal">
+              <Mail size={20} strokeWidth={2} aria-hidden="true" />
+            </PanelBadge>
+            <h1 className="text-base font-semibold text-brand-teal">
+              Verifique seu e-mail
+            </h1>
+          </div>
 
-        <p className="text-center text-sm font-medium text-brand-teal">
-          Não se preocupe! Insira o e-mail associado à sua conta e enviaremos um link para você
-          criar uma nova senha.
-        </p>
+          <p className="text-center text-sm font-medium text-brand-teal">
+            Enviamos um link de recuperação para{" "}
+            <strong className="break-all">{sentTo}</strong>. Se não encontrar,
+            confira também a pasta de spam.
+          </p>
 
-        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
-          <FormField error={fieldErrors.email}>
-            <TextInput
-              type="email"
-              placeholder="Email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setFieldErrors((current) => ({ ...current, email: undefined }));
-              }}
-              error={fieldErrors.email}
-              variant="translucent"
-              className="px-4 py-3 text-sm"
-            />
-          </FormField>
+          <p className="text-center text-xs text-brand-teal/80">
+            O link tem validade limitada e só pode ser usado uma vez. Pedir um
+            novo invalida o anterior.
+          </p>
 
-          <FormAlert align="center" className="text-xs" variant="error">
+          <FormAlert align="center" className="w-full text-xs" variant="error">
             {error}
           </FormAlert>
 
           <Button
-            type="submit"
-            disabled={loading}
+            type="button"
+            onClick={() => requestLink(sentTo)}
+            disabled={blocked}
             loading={loading}
-            loadingLabel="Enviando..."
+            loadingLabel="Reenviando..."
             fullWidth
             className="py-3"
           >
-            Enviar link de recuperação
+            {cooldown > 0 ? `Reenviar em ${cooldown}s` : "Reenviar e-mail"}
           </Button>
-        </form>
 
-        <p className="text-sm text-white">
-          Não recebeu email?{" "}
-          <Link
-            href="#"
-            className="font-medium text-brand-teal underline hover:text-brand-teal-hover"
-          >
-            Reenviar
-          </Link>
+          <div className="flex flex-col items-center gap-2 text-sm sm:flex-row sm:gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setSentTo("");
+                setError("");
+                setCooldown(0);
+              }}
+              className="font-medium text-brand-teal underline hover:text-brand-teal-hover cursor-pointer"
+            >
+              Usar outro e-mail
+            </button>
+            <span className="hidden text-brand-teal/50 sm:inline">|</span>
+            <Link
+              href="/login"
+              className="font-medium text-brand-teal hover:underline"
+            >
+              Voltar para o login
+            </Link>
+          </div>
+        </FocusPanel>
+      </AuthCard>
+    );
+  }
+
+  return (
+    <AuthCard>
+      <div className="text-center text-sm font-medium text-brand-teal">
+        <h1 className="text-base font-semibold">Esqueci minha senha</h1>
+        <p>
+          Não se preocupe! Insira o e-mail associado à sua conta e enviaremos um
+          link para você criar uma nova senha.
         </p>
       </div>
-    </section>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void requestLink(email);
+        }}
+        className="flex w-full flex-col gap-4"
+      >
+        <FormField error={fieldErrors.email}>
+          <TextInput
+            type="email"
+            placeholder="Email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setFieldErrors((current) => ({ ...current, email: undefined }));
+            }}
+            error={fieldErrors.email}
+            variant="translucent"
+            className="px-4 py-3 text-sm"
+          />
+        </FormField>
+
+        <FormAlert align="center" className="text-xs" variant="error">
+          {error}
+        </FormAlert>
+
+        <Button
+          type="submit"
+          disabled={blocked}
+          loading={loading}
+          loadingLabel="Enviando..."
+          fullWidth
+          className="py-3"
+        >
+          {cooldown > 0
+            ? `Tentar em ${cooldown}s`
+            : "Enviar link de recuperação"}
+        </Button>
+      </form>
+
+      <Link
+        href="/login"
+        className="text-sm font-medium text-brand-teal hover:underline"
+      >
+        Voltar para o login
+      </Link>
+    </AuthCard>
   );
 }
 
-function ShieldIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-      <path d="M18 3L5 8.5V17C5 24.18 10.64 30.9 18 33C25.36 30.9 31 24.18 31 17V8.5L18 3Z" fill="#064e3b" />
-      <path d="M18 6L8 10.8V17C8 23.12 12.56 28.78 18 30.6C23.44 28.78 28 23.12 28 17V10.8L18 6Z" fill="#0d9488" />
-    </svg>
-  );
-}
+
