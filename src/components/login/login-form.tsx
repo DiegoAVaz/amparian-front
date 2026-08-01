@@ -6,7 +6,13 @@ import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 
 import fundoLogin from "@/assets/fundoLogin.png";
-import { Button, FormAlert, FormField, TextInput } from "@/components/ui";
+import {
+  BrandShield,
+  Button,
+  FormAlert,
+  FormField,
+  TextInput,
+} from "@/components/ui";
 import { apiJson, getApiFormError, type ApiFieldErrors } from "@/lib/api";
 import { persistSession, setAuthCookie } from "@/lib/auth";
 
@@ -27,16 +33,27 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<LoginField>>({});
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<LoginField>>(
+    {},
+  );
   const [loading, setLoading] = useState(false);
-  const search = useSyncExternalStore(subscribeToLocation, getClientSearch, () => "");
+  const search = useSyncExternalStore(
+    subscribeToLocation,
+    getClientSearch,
+    () => "",
+  );
   const reason = new URLSearchParams(search).get("reason");
-  const reasonMessage = reason === "session-expired"
-    ? "Sua sessão expirou. Faça login novamente."
-    : reason === "session-required"
-      ? "Faça login para continuar."
-      : "";
+  const reasonMessage =
+    reason === "session-expired"
+      ? "Sua sessão expirou. Faça login novamente."
+      : reason === "session-required"
+        ? "Faça login para continuar."
+        : reason === "password-reset"
+          ? "Senha alterada com sucesso. Faça login com a nova senha."
+          : "";
   const message = error || reasonMessage;
+  const messageVariant =
+    !error && reason === "password-reset" ? "success" : "error";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,10 +75,11 @@ export function LoginForm() {
       setAuthCookie(data.user.name);
       router.push("/home");
     } catch (err) {
-      const { fieldErrors: nextFieldErrors, formError } = getApiFormError<LoginField>(
-        err,
-        "Não foi possível conectar. Verifique se a API está rodando.",
-      );
+      const { fieldErrors: nextFieldErrors, formError } =
+        getApiFormError<LoginField>(
+          err,
+          "Não foi possível conectar. Verifique se a API está rodando.",
+        );
       setFieldErrors(nextFieldErrors);
       setError(formError);
       setLoading(false);
@@ -84,7 +102,7 @@ export function LoginForm() {
 
       <div className="relative flex w-full max-w-md flex-col items-center gap-5 rounded-2xl bg-white/30 px-5 py-8 backdrop-blur-sm sm:gap-6 sm:px-10 sm:py-10">
         <div className="flex items-center gap-3">
-          <ShieldIcon />
+          <BrandShield />
           <span className="text-2xl font-bold text-brand-teal">Amparian</span>
         </div>
 
@@ -114,7 +132,10 @@ export function LoginForm() {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                setFieldErrors((current) => ({ ...current, password: undefined }));
+                setFieldErrors((current) => ({
+                  ...current,
+                  password: undefined,
+                }));
               }}
               error={fieldErrors.password}
               variant="translucent"
@@ -122,7 +143,11 @@ export function LoginForm() {
             />
           </FormField>
 
-          <FormAlert align="center" className="text-xs" variant="error">
+          <FormAlert
+            align="center"
+            className="text-xs"
+            variant={messageVariant}
+          >
             {message}
           </FormAlert>
 
@@ -159,13 +184,4 @@ function subscribeToLocation(onStoreChange: () => void) {
 
 function getClientSearch() {
   return window.location.search;
-}
-
-function ShieldIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-      <path d="M18 3L5 8.5V17C5 24.18 10.64 30.9 18 33C25.36 30.9 31 24.18 31 17V8.5L18 3Z" fill="#064e3b" />
-      <path d="M18 6L8 10.8V17C8 23.12 12.56 28.78 18 30.6C23.44 28.78 28 23.12 28 17V10.8L18 6Z" fill="#0d9488" />
-    </svg>
-  );
 }

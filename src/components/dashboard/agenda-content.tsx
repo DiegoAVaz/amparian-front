@@ -158,11 +158,7 @@ export function AgendaContent() {
               <div className="mb-4 flex items-center justify-between">
                 <IconButton
                   type="button"
-                  icon={
-                    <span className="flex h-4 w-4 items-center justify-center">
-                      <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
-                    </span>
-                  }
+                  icon={<ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />}
                   label="Mês anterior"
                   onClick={prevMonth}
                   size="sm"
@@ -171,11 +167,7 @@ export function AgendaContent() {
                 <span className="text-base font-bold capitalize text-gray-900">{monthLabel}</span>
                 <IconButton
                   type="button"
-                  icon={
-                    <span className="flex h-4 w-4 items-center justify-center">
-                      <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
-                    </span>
-                  }
+                  icon={<ChevronRight size={16} strokeWidth={2} aria-hidden="true" />}
                   label="Próximo mês"
                   onClick={nextMonth}
                   size="sm"

@@ -6,6 +6,11 @@
   --background: #ffffff;
   /* Texto padrão neutro; use text-brand-teal onde a marca for necessária */
   --foreground: #171717;
+  /* Dashboard screen canvas. Not to be confused with --background, which is
+     the white of <body> and of the auth screens. */
+  --surface-canvas: #f0f8fa;
+  /* Light accent for decorative elements sitting inside white cards */
+  --surface-accent: #dcf7fb;
 }
 
 @theme inline {
@@ -13,6 +18,8 @@
   --color-foreground: var(--foreground);
   --color-brand-teal: var(--brand-teal);
   --color-brand-teal-hover: var(--brand-teal-hover);
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-accent: var(--surface-accent);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 

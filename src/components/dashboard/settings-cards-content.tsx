@@ -49,7 +49,7 @@ export function SettingsCardsContent() {
 
   return (
     <DashboardShell activeNav="settings">
-      <main className="flex flex-1 overflow-auto bg-[#dcf7fb] p-4 sm:p-6 lg:p-8">
+      <main className="flex flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
           <nav
             aria-label="Caminho de navegação"
@@ -57,21 +57,23 @@ export function SettingsCardsContent() {
           >
             <Link
               href="/home/configuracoes"
-              className="rounded-full bg-white/35 px-5 py-1.5 font-medium text-brand-teal/45 transition-colors hover:bg-white/55 hover:text-brand-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+              className="rounded-full bg-white px-5 py-1.5 font-medium text-brand-teal/75 shadow-sm transition-colors hover:bg-white hover:text-brand-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
             >
               Configurações
             </Link>
             <span className="font-semibold text-brand-teal/50" aria-hidden>
               /
             </span>
-            <span className="rounded-full bg-white/45 px-5 py-1.5 font-medium text-brand-teal">
+            <span className="rounded-full border border-brand-teal/15 bg-surface-accent px-5 py-1.5 font-medium text-brand-teal shadow-sm">
               Meus cartões
             </span>
           </nav>
 
-          <section className="flex w-full flex-col rounded-xl border border-white/70 bg-white/95 px-5 py-6 shadow-sm sm:px-8 lg:px-12">
+          <section className="flex w-full flex-col rounded-xl border border-gray-100 bg-white px-5 py-6 shadow-sm sm:px-8 lg:px-12">
             <header className="pb-5">
-              <h1 className="text-xl font-semibold text-brand-teal">Gerenciar cartões</h1>
+              <h1 className="text-xl font-semibold text-brand-teal">
+                Gerenciar cartões
+              </h1>
               <div className="mt-4 h-px w-full bg-gray-200" />
             </header>
 
@@ -84,9 +86,7 @@ export function SettingsCardsContent() {
                   onClick={handleAddCard}
                   variant="success"
                   leftIcon={
-                    <span className="flex h-4 w-4 items-center justify-center">
-                      <Plus size={16} strokeWidth={2.5} aria-hidden="true" />
-                    </span>
+                    <Plus size={16} strokeWidth={2.5} aria-hidden="true" />
                   }
                 >
                   Adicionar cartão
@@ -97,8 +97,14 @@ export function SettingsCardsContent() {
                 {addCardNotice}
               </FormAlert>
 
-              <section aria-labelledby="primary-card-heading" className="flex max-w-2xl flex-col gap-4">
-                <h2 id="primary-card-heading" className="text-base font-semibold text-brand-teal">
+              <section
+                aria-labelledby="primary-card-heading"
+                className="flex max-w-2xl flex-col gap-4"
+              >
+                <h2
+                  id="primary-card-heading"
+                  className="text-base font-semibold text-brand-teal"
+                >
                   Cartão principal
                 </h2>
                 {primaryCard ? (
@@ -114,8 +120,14 @@ export function SettingsCardsContent() {
                 )}
               </section>
 
-              <section aria-labelledby="other-cards-heading" className="flex max-w-2xl flex-col gap-4">
-                <h2 id="other-cards-heading" className="text-base font-semibold text-brand-teal">
+              <section
+                aria-labelledby="other-cards-heading"
+                className="flex max-w-2xl flex-col gap-4"
+              >
+                <h2
+                  id="other-cards-heading"
+                  className="text-base font-semibold text-brand-teal"
+                >
                   Outros cartões
                 </h2>
                 <div className="flex flex-col gap-3">
@@ -160,7 +172,10 @@ function PaymentCardRow({
       aria-label={`${card.brand} final ${card.last4}`}
     >
       <div className="flex min-w-0 items-center gap-4">
-        <span className="h-10 w-10 shrink-0 rounded-full bg-[#dcf7fb]" aria-hidden />
+        <span
+          className="h-10 w-10 shrink-0 rounded-full bg-surface-accent"
+          aria-hidden
+        />
         <p className="truncate text-sm font-medium text-gray-950">
           {card.brand} ****** {card.last4}
         </p>
