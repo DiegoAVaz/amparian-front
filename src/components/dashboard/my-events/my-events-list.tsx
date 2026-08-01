@@ -84,11 +84,7 @@ export function MyEventsList() {
               type="button"
               onClick={() => setModal("create-event")}
               className="w-full sm:w-auto"
-              leftIcon={
-                <span className="flex h-5 w-5 items-center justify-center">
-                  <Plus size={18} strokeWidth={3} aria-hidden="true" />
-                </span>
-              }
+              leftIcon={<Plus size={18} strokeWidth={3} aria-hidden="true" />}
               variant="success"
             >
               Criar Evento

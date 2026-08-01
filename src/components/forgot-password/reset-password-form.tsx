@@ -1,144 +1,41 @@
 "use client";
 
-import Image from "next/image";
+import { CircleAlert } from "lucide-react";
+import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 
-import forgotPassPt1 from "@/assets/forgotPassPt1.jpg";
-import { Button, FormAlert, FormField, TextInput } from "@/components/ui";
-import { apiJson, getApiFormError, type ApiFieldErrors } from "@/lib/api";
+import {
+  Button,
+  FormAlert,
+  FormField,
+  LinkButton,
+  PanelBadge,
+  TextInput,
+} from "@/components/ui";
+import {
+  ApiError,
+  apiJson,
+  getApiFormError,
+  type ApiFieldErrors,
+} from "@/lib/api";
+import { AuthCard, FocusPanel } from "./auth-card";
 
 type ResetPasswordField = "password" | "confirm";
 
-export function ResetPasswordForm() {
-  const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<ResetPasswordField>>({});
-  const [loading, setLoading] = useState(false);
-  const search = useSyncExternalStore(subscribeToLocation, getClientSearch, () => "");
-  const token = new URLSearchParams(search).get("token") ?? "";
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 72;
+const PASSWORD_RULE =
+  "Mínimo de 8 caracteres, com letra maiúscula, minúscula, número e caractere especial.";
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setFieldErrors({});
-
-    if (password !== confirm) {
-      setFieldErrors({ confirm: "As senhas não coincidem." });
-      return;
-    }
-    if (!token.trim()) {
-      setError("Link inválido ou expirado. Solicite um novo e-mail de recuperação.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await apiJson("/auth/reset-password", {
-        method: "POST",
-        json: { token: token.trim(), newPassword: password },
-        auth: false,
-      });
-      router.push("/login");
-    } catch (err) {
-      const { fieldErrors: nextFieldErrors, formError } = getApiFormError<ResetPasswordField>(
-        err,
-        "Não foi possível atualizar. Verifique se a API está rodando.",
-        {
-          fieldMap: {
-            "body.newPassword": "password",
-            "body.token": null,
-            newPassword: "password",
-            token: null,
-          },
-        },
-      );
-      setFieldErrors(nextFieldErrors);
-      setError(formError);
-      setLoading(false);
-    }
-  }
-
+function violatesPasswordRule(value: string): boolean {
   return (
-    <section className="relative flex min-h-[100dvh] items-center justify-center px-4 py-8 sm:px-6 sm:py-10">
-      <div className="absolute inset-0">
-        <Image
-          src={forgotPassPt1}
-          alt=""
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-black/40" />
-      </div>
-
-      <div className="relative flex w-full max-w-lg flex-col items-center gap-6 rounded-2xl bg-white/30 px-5 py-8 backdrop-blur-sm sm:px-10 sm:py-10">
-        <div className="flex items-center gap-3">
-          <ShieldIcon />
-          <span className="text-2xl font-bold text-brand-teal">Amparian</span>
-        </div>
-
-        <div className="text-center text-sm font-medium text-brand-teal">
-          <p>Criar nova senha.</p>
-          <p>Escolha uma senha forte que você não tenha usado antes.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
-          <FormField error={fieldErrors.password}>
-            <TextInput
-              type="password"
-              placeholder="Digite nova senha"
-              autoComplete="new-password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setFieldErrors((current) => ({ ...current, password: undefined }));
-              }}
-              error={fieldErrors.password}
-              variant="translucent"
-              className="px-4 py-3 text-sm"
-            />
-          </FormField>
-          <FormField error={fieldErrors.confirm}>
-            <TextInput
-              type="password"
-              placeholder="Digite senha novamente"
-              autoComplete="new-password"
-              required
-              minLength={6}
-              value={confirm}
-              onChange={(e) => {
-                setConfirm(e.target.value);
-                setFieldErrors((current) => ({ ...current, confirm: undefined }));
-              }}
-              error={fieldErrors.confirm}
-              variant="translucent"
-              className="px-4 py-3 text-sm"
-            />
-          </FormField>
-
-          <FormAlert align="center" className="text-xs" variant="error">
-            {error}
-          </FormAlert>
-
-          <Button
-            type="submit"
-            disabled={loading}
-            loading={loading}
-            loadingLabel="Atualizando..."
-            fullWidth
-            className="mt-1 py-3"
-          >
-            Atualizar senha
-          </Button>
-        </form>
-      </div>
-    </section>
+    value.length < PASSWORD_MIN_LENGTH ||
+    value.length > PASSWORD_MAX_LENGTH ||
+    !/[A-Z]/.test(value) ||
+    !/[a-z]/.test(value) ||
+    !/\d/.test(value) ||
+    !/[^\w\s]/.test(value)
   );
 }
 
@@ -151,11 +48,194 @@ function getClientSearch() {
   return window.location.search;
 }
 
-function ShieldIcon() {
+export function ResetPasswordForm() {
+  const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    ApiFieldErrors<ResetPasswordField>
+  >({});
+  const [loading, setLoading] = useState(false);
+  const [tokenRejected, setTokenRejected] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+
+  const ruleError =
+    passwordTouched && password.length > 0 && violatesPasswordRule(password)
+      ? PASSWORD_RULE
+      : undefined;
+
+  const search = useSyncExternalStore(
+    subscribeToLocation,
+    getClientSearch,
+    () => null,
+  );
+  const token =
+    search === null
+      ? null
+      : (new URLSearchParams(search).get("token") ?? "").trim();
+
+  const linkIsDead = token === "" || tokenRejected;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setFieldErrors({});
+
+    if (violatesPasswordRule(password)) {
+      setPasswordTouched(true);
+      return;
+    }
+    if (password !== confirm) {
+      setFieldErrors({ confirm: "As senhas não coincidem." });
+      return;
+    }
+    if (!token) {
+      setError(
+        "Link inválido ou expirado. Solicite um novo e-mail de recuperação.",
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await apiJson("/auth/reset-password", {
+        method: "POST",
+        json: { token, newPassword: password },
+        auth: false,
+      });
+      router.push("/login?reason=password-reset");
+    } catch (err) {
+      if (err instanceof ApiError && err.hasCode("INVALID_RESET_TOKEN")) {
+        setTokenRejected(true);
+        setLoading(false);
+        return;
+      }
+
+      const { fieldErrors: nextFieldErrors, formError } =
+        getApiFormError<ResetPasswordField>(
+          err,
+          "Não foi possível atualizar. Verifique se a API está rodando.",
+          {
+            fieldMap: {
+              "body.newPassword": "password",
+              "body.token": null,
+              newPassword: "password",
+              token: null,
+            },
+          },
+        );
+      setFieldErrors(nextFieldErrors);
+      setError(formError);
+      setLoading(false);
+    }
+  }
+
+  if (linkIsDead) {
+    return (
+      <AuthCard>
+        <FocusPanel>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <PanelBadge tone="danger">
+              <CircleAlert size={20} strokeWidth={2} aria-hidden="true" />
+            </PanelBadge>
+            <h1 className="text-base font-semibold text-brand-teal">
+              {tokenRejected ? "Link expirado" : "Link inválido"}
+            </h1>
+          </div>
+
+          <p className="text-center text-sm font-medium text-brand-teal">
+            {tokenRejected
+              ? "Este link já foi usado ou passou da validade. Peça um novo e use-o em seguida."
+              : "Este endereço não traz um token de redefinição. O link pode ter sido copiado pela metade, ou já foi substituído por um mais recente."}
+          </p>
+
+          <LinkButton href="/esqueci-minha-senha" fullWidth className="py-3">
+            Pedir um novo link
+          </LinkButton>
+
+          <Link
+            href="/login"
+            className="text-sm font-medium text-brand-teal hover:underline"
+          >
+            Voltar para o login
+          </Link>
+        </FocusPanel>
+      </AuthCard>
+    );
+  }
+
   return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-      <path d="M18 3L5 8.5V17C5 24.18 10.64 30.9 18 33C25.36 30.9 31 24.18 31 17V8.5L18 3Z" fill="#064e3b" />
-      <path d="M18 6L8 10.8V17C8 23.12 12.56 28.78 18 30.6C23.44 28.78 28 23.12 28 17V10.8L18 6Z" fill="#0d9488" />
-    </svg>
+    <AuthCard>
+      <div className="text-center text-sm font-medium text-brand-teal">
+        <h1 className="text-base font-semibold">Criar nova senha</h1>
+        <p>Escolha uma senha forte que você não tenha usado antes.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+        <FormField error={fieldErrors.password ?? ruleError}>
+          <TextInput
+            type="password"
+            placeholder="Digite nova senha"
+            autoComplete="new-password"
+            required
+            minLength={PASSWORD_MIN_LENGTH}
+            maxLength={PASSWORD_MAX_LENGTH}
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setFieldErrors((current) => ({
+                ...current,
+                password: undefined,
+              }));
+            }}
+            onBlur={() => setPasswordTouched(true)}
+            error={fieldErrors.password ?? ruleError}
+            variant="translucent"
+            className="px-4 py-3 text-sm"
+          />
+        </FormField>
+        <FormField error={fieldErrors.confirm}>
+          <TextInput
+            type="password"
+            placeholder="Digite senha novamente"
+            autoComplete="new-password"
+            required
+            minLength={PASSWORD_MIN_LENGTH}
+            maxLength={PASSWORD_MAX_LENGTH}
+            value={confirm}
+            onChange={(e) => {
+              setConfirm(e.target.value);
+              setFieldErrors((current) => ({ ...current, confirm: undefined }));
+            }}
+            error={fieldErrors.confirm}
+            variant="translucent"
+            className="px-4 py-3 text-sm"
+          />
+        </FormField>
+
+        <FormAlert align="center" className="text-xs" variant="error">
+          {error}
+        </FormAlert>
+
+        <Button
+          type="submit"
+          disabled={loading}
+          loading={loading}
+          loadingLabel="Atualizando..."
+          fullWidth
+          className="mt-1 py-3"
+        >
+          Atualizar senha
+        </Button>
+      </form>
+
+      <Link
+        href="/login"
+        className="text-sm font-medium text-brand-teal hover:underline"
+      >
+        Voltar para o login
+      </Link>
+    </AuthCard>
   );
 }
