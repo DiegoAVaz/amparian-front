@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { FormField, LinkButton, Textarea, TextInput } from "@/components/ui";
+import {
+  Avatar,
+  FormField,
+  LinkButton,
+  Textarea,
+  TextInput,
+} from "@/components/ui";
 import {
   type MyRegistration,
   type UserProfile,
@@ -43,7 +49,11 @@ export function ProfilesContent() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : "Não foi possível carregar o perfil.");
+          setError(
+            err instanceof ApiError
+              ? err.message
+              : "Não foi possível carregar o perfil.",
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -56,7 +66,6 @@ export function ProfilesContent() {
     };
   }, []);
 
-  const initials = useMemo(() => getInitials(profile?.name ?? ""), [profile?.name]);
   const statCards = stats
     ? [
         { label: "HORAS DOADAS", value: String(stats.hoursDonated) },
@@ -83,16 +92,21 @@ export function ProfilesContent() {
           <>
             <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
               <div className="flex flex-col gap-6 lg:flex-row">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex h-40 w-40 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-cyan-500 text-4xl font-bold text-white">
-                    {initials}
-                  </div>
-                </div>
+                <Avatar
+                  name={profile?.name ?? ""}
+                  src={profile?.avatarUrl}
+                  size="lg"
+                  className="self-center lg:self-start"
+                />
                 <div className="flex min-w-0 flex-1 flex-col gap-4">
                   <ReadOnlyField label="Nome" value={profile?.name ?? ""} />
                   <ReadOnlyField
                     label="Telefone"
-                    value={profile?.phone ? formatBrazilianPhone(profile.phone) : "Não informado"}
+                    value={
+                      profile?.phone
+                        ? formatBrazilianPhone(profile.phone)
+                        : "Não informado"
+                    }
                   />
                   <ReadOnlyField
                     label="Organização pública"
@@ -100,11 +114,17 @@ export function ProfilesContent() {
                   />
                   <ReadOnlyField
                     label="Cidade / UF"
-                    value={[profile?.city, profile?.state].filter(Boolean).join(" / ") || "Não informado"}
+                    value={
+                      [profile?.city, profile?.state]
+                        .filter(Boolean)
+                        .join(" / ") || "Não informado"
+                    }
                   />
                   <ReadOnlyTextArea
                     label="Descrição"
-                    value={profile?.bio ?? "Você ainda não adicionou uma descrição."}
+                    value={
+                      profile?.bio ?? "Você ainda não adicionou uma descrição."
+                    }
                   />
                 </div>
               </div>
@@ -112,8 +132,13 @@ export function ProfilesContent() {
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {statCards.map((s) => (
-                <div key={s.label} className="rounded-xl bg-brand-teal px-4 py-6 text-center shadow-sm">
-                  <p className="text-2xl font-bold text-white sm:text-3xl">{s.value}</p>
+                <div
+                  key={s.label}
+                  className="rounded-xl bg-brand-teal px-4 py-6 text-center shadow-sm"
+                >
+                  <p className="text-2xl font-bold text-white sm:text-3xl">
+                    {s.value}
+                  </p>
                   <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-white/90 sm:text-xs">
                     {s.label}
                   </p>
@@ -122,7 +147,9 @@ export function ProfilesContent() {
             </div>
 
             <section>
-              <h2 className="mb-4 text-base font-bold text-brand-teal">Meus últimos eventos</h2>
+              <h2 className="mb-4 text-base font-bold text-brand-teal">
+                Meus últimos eventos
+              </h2>
               {recentEvents.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-sm">
                   Você ainda não tem eventos recentes na sua agenda.
@@ -136,7 +163,9 @@ export function ProfilesContent() {
                     >
                       <div
                         className={`h-24 w-28 flex-shrink-0 bg-gradient-to-br sm:w-32 ${
-                          index % 2 === 0 ? "from-teal-600 to-cyan-500" : "from-emerald-600 to-teal-400"
+                          index % 2 === 0
+                            ? "from-teal-600 to-cyan-500"
+                            : "from-emerald-600 to-teal-400"
                         }`}
                         aria-hidden
                       />
@@ -144,9 +173,13 @@ export function ProfilesContent() {
                         <p className="truncate font-semibold text-gray-900">
                           {registration.event.title}
                         </p>
-                        <p className="truncate text-sm text-gray-500">{registration.event.org}</p>
+                        <p className="truncate text-sm text-gray-500">
+                          {registration.event.org}
+                        </p>
                         <p className="truncate text-xs text-gray-400">
-                          {new Date(registration.event.startsAt).toLocaleDateString("pt-BR")}
+                          {new Date(
+                            registration.event.startsAt,
+                          ).toLocaleDateString("pt-BR")}
                         </p>
                       </div>
                     </div>
@@ -203,13 +236,4 @@ function ReadOnlyTextArea({ label, value }: { label: string; value: string }) {
       />
     </FormField>
   );
-}
-
-function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "AM";
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
 }

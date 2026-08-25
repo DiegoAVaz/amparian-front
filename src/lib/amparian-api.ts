@@ -62,6 +62,7 @@ export type OrganizerEventSummary = {
   filter: EventTimeFilter;
   statusLabel: string;
   description: string;
+  coverImageUrl: string | null;
   imageClassName: string;
   startsAt: string;
   status: "draft" | "published" | "cancelled";
@@ -133,7 +134,6 @@ export type EventFormInput = {
   isRemote: boolean;
   capacity: number | null;
   highlightSkill: string | null;
-  coverImageUrl: string | null;
   typeCodes: string[];
   requirementCodes: string[];
   publish: boolean;
@@ -167,7 +167,6 @@ export async function updateMyProfile(
     state: string | null;
     bio: string | null;
     publicOrganizationName: string | null;
-    avatarUrl: string | null;
   }>,
 ): Promise<UserProfile> {
   return apiJson<UserProfile>("/me", { method: "PATCH", json: patch });
@@ -177,7 +176,9 @@ export async function getMyStats(): Promise<UserStats> {
   return apiJson<UserStats>("/me/stats");
 }
 
-export async function getPublicEvents(q?: string): Promise<PublicEventSummary[]> {
+export async function getPublicEvents(
+  q?: string,
+): Promise<PublicEventSummary[]> {
   const params = new URLSearchParams();
   if (q?.trim()) params.set("q", q.trim());
   params.set("limit", "20");
@@ -186,7 +187,9 @@ export async function getPublicEvents(q?: string): Promise<PublicEventSummary[]>
   return res.data;
 }
 
-export async function getPublicEvent(eventId: number | string): Promise<PublicEventDetail> {
+export async function getPublicEvent(
+  eventId: number | string,
+): Promise<PublicEventDetail> {
   const event = await apiJson<PublicEventDetailApi>(`/events/${eventId}`);
   return mapPublicEventDetail(event);
 }
@@ -201,22 +204,33 @@ export async function registerForPublicEvent(
   });
 }
 
-export async function getAgenda(year: number, month: number): Promise<AgendaItem[]> {
+export async function getAgenda(
+  year: number,
+  month: number,
+): Promise<AgendaItem[]> {
   const params = new URLSearchParams({
     year: String(year),
     month: String(month),
   });
-  const res = await apiJson<{ data: AgendaItem[] }>(`/me/agenda?${params.toString()}`);
+  const res = await apiJson<{ data: AgendaItem[] }>(
+    `/me/agenda?${params.toString()}`,
+  );
   return res.data;
 }
 
-export async function getMyRegistrations(limit = 20): Promise<MyRegistration[]> {
+export async function getMyRegistrations(
+  limit = 20,
+): Promise<MyRegistration[]> {
   const params = new URLSearchParams({ page: "1", limit: String(limit) });
-  const res = await apiJson<Paginated<MyRegistration>>(`/me/registrations?${params.toString()}`);
+  const res = await apiJson<Paginated<MyRegistration>>(
+    `/me/registrations?${params.toString()}`,
+  );
   return res.data;
 }
 
-export async function getOrganizerEvents(filter?: EventTimeFilter): Promise<OrganizerEventSummary[]> {
+export async function getOrganizerEvents(
+  filter?: EventTimeFilter,
+): Promise<OrganizerEventSummary[]> {
   const params = new URLSearchParams();
   if (filter) params.set("filter", filter);
   const path = `/me/events${params.size > 0 ? `?${params.toString()}` : ""}`;
@@ -248,12 +262,16 @@ type PublicEventDetailApi = Omit<PublicEventDetail, "computedStatus"> & {
   computedStatus: ApiComputedEventStatus;
 };
 
-export async function getOrganizerEvent(eventId: number | string): Promise<OrganizerEventDetail> {
+export async function getOrganizerEvent(
+  eventId: number | string,
+): Promise<OrganizerEventDetail> {
   const event = await apiJson<OrganizerEventApi>(`/me/events/${eventId}`);
   return mapOrganizerEvent(event);
 }
 
-export async function createOrganizerEvent(input: EventFormInput): Promise<OrganizerEventDetail> {
+export async function createOrganizerEvent(
+  input: EventFormInput,
+): Promise<OrganizerEventDetail> {
   const event = await apiJson<OrganizerEventApi>("/me/events", {
     method: "POST",
     json: input,
@@ -272,12 +290,18 @@ export async function updateOrganizerEvent(
   return mapOrganizerEvent(event);
 }
 
-export async function deleteOrganizerEvent(eventId: number | string): Promise<void> {
+export async function deleteOrganizerEvent(
+  eventId: number | string,
+): Promise<void> {
   await apiJson(`/me/events/${eventId}`, { method: "DELETE" });
 }
 
-export async function getOrganizerRegistrations(eventId: number | string): Promise<SubscriberRecord[]> {
-  const res = await apiJson<{ data: SubscriberRecord[] }>(`/me/events/${eventId}/registrations`);
+export async function getOrganizerRegistrations(
+  eventId: number | string,
+): Promise<SubscriberRecord[]> {
+  const res = await apiJson<{ data: SubscriberRecord[] }>(
+    `/me/events/${eventId}/registrations`,
+  );
   return res.data;
 }
 
@@ -321,8 +345,53 @@ function mapPublicEventDetail(event: PublicEventDetailApi): PublicEventDetail {
   };
 }
 
-function normalizeComputedEventStatus(status: ApiComputedEventStatus): ComputedEventStatus {
+function normalizeComputedEventStatus(
+  status: ApiComputedEventStatus,
+): ComputedEventStatus {
   if (status === "active") return "upcoming";
   if (status === "ended") return "past";
   return status;
+}
+
+const UPLOAD_FIELD_NAME = "file";
+
+function imageFormData(file: File): FormData {
+  const form = new FormData();
+  form.append(UPLOAD_FIELD_NAME, file);
+  return form;
+}
+
+export async function uploadMyAvatar(file: File): Promise<UserProfile> {
+  return apiJson<UserProfile>("/me/avatar", {
+    method: "POST",
+    body: imageFormData(file),
+  });
+}
+
+export async function deleteMyAvatar(): Promise<UserProfile> {
+  return apiJson<UserProfile>("/me/avatar", { method: "DELETE" });
+}
+
+export async function uploadEventCover(
+  eventId: number | string,
+  file: File,
+): Promise<OrganizerEventDetail> {
+  const event = await apiJson<OrganizerEventApi | undefined>(
+    `/me/events/${eventId}/cover`,
+    { method: "POST", body: imageFormData(file) },
+  );
+  if (!event) throw new Error("A API não devolveu o evento após o envio.");
+  return mapOrganizerEvent(event);
+}
+
+export async function deleteEventCover(
+  eventId: number | string,
+): Promise<OrganizerEventDetail> {
+  const event = await apiJson<OrganizerEventApi | undefined>(
+    `/me/events/${eventId}/cover`,
+    { method: "DELETE" },
+  );
+  if (!event)
+    throw new Error("A API não devolveu o evento após remover a capa.");
+  return mapOrganizerEvent(event);
 }

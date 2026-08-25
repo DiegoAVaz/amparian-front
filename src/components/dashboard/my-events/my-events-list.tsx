@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 
 import { Button, LinkButton, SearchInput } from "@/components/ui";
-import { type OrganizerEventDetail, type OrganizerEventSummary, getOrganizerEvents } from "@/lib/amparian-api";
+import {
+  type OrganizerEventDetail,
+  type OrganizerEventSummary,
+  getOrganizerEvents,
+} from "@/lib/amparian-api";
 import { ApiError } from "@/lib/api";
 import { CreateEventModal } from "@/components/dashboard/create-event-modal";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
@@ -27,7 +31,9 @@ export function MyEventsList() {
   const [events, setEvents] = useState<OrganizerEventSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [savedEvent, setSavedEvent] = useState<OrganizerEventDetail | null>(null);
+  const [savedEvent, setSavedEvent] = useState<OrganizerEventDetail | null>(
+    null,
+  );
   const [publishError, setPublishError] = useState("");
 
   useEffect(() => {
@@ -41,7 +47,11 @@ export function MyEventsList() {
         if (!cancelled) setEvents(nextEvents);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : "Não foi possível carregar seus eventos.");
+          setError(
+            err instanceof ApiError
+              ? err.message
+              : "Não foi possível carregar seus eventos.",
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -60,7 +70,10 @@ export function MyEventsList() {
     return events.filter((e) => e.title.toLowerCase().includes(q));
   }, [events, query]);
 
-  function handleSaved(event: OrganizerEventDetail, action: "draft" | "published") {
+  function handleSaved(
+    event: OrganizerEventDetail,
+    action: "draft" | "published",
+  ) {
     setSavedEvent(event);
     setModal(action === "published" ? "publish-success" : "none");
     void refreshEvents();
@@ -100,7 +113,9 @@ export function MyEventsList() {
                   onClick={() => setTab(t.id)}
                   className={[
                     "relative rounded-none px-4 pb-3 hover:bg-transparent",
-                    tab === t.id ? "text-brand-teal" : "text-gray-500 hover:text-gray-700",
+                    tab === t.id
+                      ? "text-brand-teal"
+                      : "text-gray-500 hover:text-gray-700",
                   ].join(" ")}
                   size="sm"
                   variant="ghost"
@@ -140,14 +155,30 @@ export function MyEventsList() {
                   className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm sm:flex-row"
                 >
                   <div
-                    className={`flex h-32 w-full flex-shrink-0 bg-gradient-to-br sm:h-32 sm:w-44 ${event.imageClassName}`}
+                    className={`flex h-32 w-full flex-shrink-0 overflow-hidden bg-gradient-to-br sm:h-32 sm:w-44 ${event.imageClassName}`}
                     aria-hidden
-                  />
+                  >
+                    {event.coverImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        key={event.coverImageUrl}
+                        src={event.coverImageUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : null}
+                  </div>
                   <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div className="min-w-0">
-                      <h2 className="truncate text-base font-semibold text-brand-teal">{event.title}</h2>
+                      <h2 className="truncate text-base font-semibold text-brand-teal">
+                        {event.title}
+                      </h2>
                       <p className="text-xs text-gray-500">
-                        {new Date(event.startsAt).toLocaleDateString("pt-BR")} • {event.statusLabel}
+                        {new Date(event.startsAt).toLocaleDateString("pt-BR")} •{" "}
+                        {event.statusLabel}
                       </p>
                     </div>
                     <LinkButton
@@ -178,8 +209,16 @@ export function MyEventsList() {
           <PublishSuccessModal
             onClose={() => setModal("none")}
             eventTitle={savedEvent?.title}
-            eventDate={savedEvent ? new Date(savedEvent.startsAt).toLocaleDateString("pt-BR") : null}
-            onViewEvent={() => (savedEvent ? (window.location.href = `/home/meus-eventos/${savedEvent.id}`) : undefined)}
+            eventDate={
+              savedEvent
+                ? new Date(savedEvent.startsAt).toLocaleDateString("pt-BR")
+                : null
+            }
+            onViewEvent={() =>
+              savedEvent
+                ? (window.location.href = `/home/meus-eventos/${savedEvent.id}`)
+                : undefined
+            }
           />
         )}
         {modal === "publish-error" && (
@@ -198,9 +237,12 @@ function EmptyEventsState() {
   return (
     <div className="flex flex-col items-center justify-center gap-6 rounded-2xl border border-dashed border-gray-200 bg-white/70 px-6 py-12 text-center sm:flex-row sm:items-start sm:justify-between sm:px-10 sm:text-left">
       <div className="max-w-md space-y-2">
-        <p className="text-base font-semibold text-brand-teal">Nenhum evento por aqui</p>
+        <p className="text-base font-semibold text-brand-teal">
+          Nenhum evento por aqui
+        </p>
         <p className="text-sm text-gray-600">
-          Não há eventos para mostrar nesta aba. Que tal criar um novo evento ou conferir outro período?
+          Não há eventos para mostrar nesta aba. Que tal criar um novo evento ou
+          conferir outro período?
         </p>
       </div>
       <MascotIllustration />
@@ -214,8 +256,19 @@ function MascotIllustration() {
       <div className="absolute -right-2 top-0 max-w-[140px] rounded-2xl rounded-bl-none bg-white px-3 py-2 text-center text-xs font-medium text-gray-700 shadow-md">
         Ops! Nada por aqui ainda.
       </div>
-      <svg viewBox="0 0 120 140" className="h-36 w-28 text-emerald-500" aria-hidden>
-        <ellipse cx="60" cy="120" rx="40" ry="8" fill="currentColor" opacity="0.15" />
+      <svg
+        viewBox="0 0 120 140"
+        className="h-36 w-28 text-emerald-500"
+        aria-hidden
+      >
+        <ellipse
+          cx="60"
+          cy="120"
+          rx="40"
+          ry="8"
+          fill="currentColor"
+          opacity="0.15"
+        />
         <path
           d="M60 20c-22 0-40 18-40 40v28c0 6 5 11 11 11h58c6 0 11-5 11-11V60c0-22-18-40-40-40z"
           fill="currentColor"
@@ -225,8 +278,21 @@ function MascotIllustration() {
         <circle cx="75" cy="55" r="6" fill="white" />
         <circle cx="47" cy="56" r="3" fill="#064e3b" />
         <circle cx="77" cy="56" r="3" fill="#064e3b" />
-        <path d="M48 78c8 6 16 6 24 0" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" />
-        <ellipse cx="60" cy="105" rx="18" ry="10" fill="#34d399" opacity="0.5" />
+        <path
+          d="M48 78c8 6 16 6 24 0"
+          stroke="white"
+          strokeWidth="3"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <ellipse
+          cx="60"
+          cy="105"
+          rx="18"
+          ry="10"
+          fill="#34d399"
+          opacity="0.5"
+        />
       </svg>
     </div>
   );

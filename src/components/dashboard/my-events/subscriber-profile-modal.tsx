@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 
-import { Button, IconButton } from "@/components/ui";
+import { Avatar, Button, IconButton } from "@/components/ui";
 import type { SubscriberRecord } from "@/lib/amparian-api";
 
 type Props = {
@@ -34,13 +34,7 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
         </h2>
 
         <div className="mt-6 flex flex-col items-center gap-4 border-b border-gray-100 pb-6 sm:flex-row sm:items-start">
-          <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-400 text-2xl font-bold text-white">
-            {subscriber.name
-              .split(" ")
-              .map((p) => p[0])
-              .slice(0, 2)
-              .join("")}
-          </div>
+          <Avatar name={subscriber.name} size="sm" />
           <div className="flex flex-1 flex-col items-center text-center sm:items-start sm:text-left">
             <p className="text-base font-semibold text-gray-900">{subscriber.name}</p>
             <p className="text-sm text-gray-500">{subscriber.role || "Voluntário"}</p>
