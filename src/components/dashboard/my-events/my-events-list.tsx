@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import { Button, LinkButton, SearchInput } from "@/components/ui";
@@ -25,6 +26,7 @@ const TABS: { id: EventTimeFilter; label: string }[] = [
 ];
 
 export function MyEventsList() {
+  const router = useRouter();
   const [tab, setTab] = useState<EventTimeFilter>("upcoming");
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState<ModalState>("none");
@@ -155,7 +157,7 @@ export function MyEventsList() {
                   className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm sm:flex-row"
                 >
                   <div
-                    className={`flex h-32 w-full flex-shrink-0 overflow-hidden bg-gradient-to-br sm:h-32 sm:w-44 ${event.imageClassName}`}
+                    className={`flex h-32 w-full shrink-0 overflow-hidden bg-linear-to-br sm:h-32 sm:w-44 ${event.imageClassName}`}
                     aria-hidden
                   >
                     {event.coverImageUrl ? (
@@ -183,7 +185,7 @@ export function MyEventsList() {
                     </div>
                     <LinkButton
                       href={`/home/meus-eventos/${event.id}`}
-                      className="w-full sm:w-auto sm:flex-shrink-0"
+                      className="w-full sm:w-auto sm:shrink-0"
                       size="sm"
                     >
                       Ver detalhes
@@ -205,20 +207,13 @@ export function MyEventsList() {
             }}
           />
         )}
-        {modal === "publish-success" && (
+        {modal === "publish-success" && savedEvent && (
           <PublishSuccessModal
             onClose={() => setModal("none")}
-            eventTitle={savedEvent?.title}
-            eventDate={
-              savedEvent
-                ? new Date(savedEvent.startsAt).toLocaleDateString("pt-BR")
-                : null
-            }
-            onViewEvent={() =>
-              savedEvent
-                ? (window.location.href = `/home/meus-eventos/${savedEvent.id}`)
-                : undefined
-            }
+            eventTitle={savedEvent.title}
+            eventDate={new Date(savedEvent.startsAt).toLocaleDateString("pt-BR")}
+            coverImageUrl={savedEvent.coverImageUrl}
+            onViewEvent={() => router.push(`/home/meus-eventos/${savedEvent.id}`)}
           />
         )}
         {modal === "publish-error" && (
@@ -252,8 +247,8 @@ function EmptyEventsState() {
 
 function MascotIllustration() {
   return (
-    <div className="relative flex w-full max-w-[200px] flex-col items-center">
-      <div className="absolute -right-2 top-0 max-w-[140px] rounded-2xl rounded-bl-none bg-white px-3 py-2 text-center text-xs font-medium text-gray-700 shadow-md">
+    <div className="relative flex w-full max-w-50 flex-col items-center">
+      <div className="absolute -right-2 top-0 max-w-35 rounded-2xl rounded-bl-none bg-white px-3 py-2 text-center text-xs font-medium text-gray-700 shadow-md">
         Ops! Nada por aqui ainda.
       </div>
       <svg

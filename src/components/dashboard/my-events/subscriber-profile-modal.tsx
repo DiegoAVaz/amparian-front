@@ -7,14 +7,14 @@ import type { SubscriberRecord } from "@/lib/amparian-api";
 
 type Props = {
   subscriber: SubscriberRecord;
-  onClose: () => void;
-  onConfirmPresence: () => void;
+  onCloseAction: () => void;
+  onConfirmPresenceAction: () => void;
 };
 
-export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence }: Props) {
+export function SubscriberProfileModal({ subscriber, onCloseAction, onConfirmPresenceAction }: Props) {
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-60 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-perfil-titulo"
@@ -24,7 +24,7 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
           className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-transparent hover:text-gray-500"
           icon={<X size={16} strokeWidth={2} aria-hidden="true" />}
           label="Fechar"
-          onClick={onClose}
+          onClick={onCloseAction}
           size="sm"
           variant="ghost"
         />
@@ -54,7 +54,7 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
         <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <Button
             type="button"
-            onClick={onClose}
+            onClick={onCloseAction}
             className="w-full sm:w-auto"
             variant="outline"
           >
@@ -63,7 +63,7 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
           {subscriber.status !== "confirmed" && (
             <Button
               type="button"
-              onClick={onConfirmPresence}
+              onClick={onConfirmPresenceAction}
               className="w-full sm:w-auto"
               variant="success"
             >

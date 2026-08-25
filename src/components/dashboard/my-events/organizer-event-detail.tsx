@@ -171,7 +171,7 @@ export function OrganizerEventDetail({ eventId }: Props) {
           </nav>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <h1 className="break-words text-xl font-bold text-brand-teal sm:max-w-xl">{event.title}</h1>
+            <h1 className="wrap-break-word text-xl font-bold text-brand-teal sm:max-w-xl">{event.title}</h1>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
@@ -193,7 +193,7 @@ export function OrganizerEventDetail({ eventId }: Props) {
           </div>
 
           <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-            <div className="flex h-48 w-full items-center justify-center bg-gradient-to-r from-teal-600 to-cyan-500 sm:h-56">
+            <div className="flex h-48 w-full items-center justify-center bg-linear-to-r from-teal-600 to-cyan-500 sm:h-56">
               {event.coverImageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={event.coverImageUrl} alt="" className="h-full w-full object-cover" />
@@ -234,7 +234,7 @@ export function OrganizerEventDetail({ eventId }: Props) {
                   </div>
                 )}
               </div>
-              <div className="flex flex-shrink-0 flex-col items-start gap-1">
+              <div className="flex shrink-0 flex-col items-start gap-1">
                 <span className="text-xs font-medium uppercase tracking-wide text-gray-400">Status</span>
                 <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusPill(event.computedStatus)}`}>
                   {computedStatusLabel(event.computedStatus)}
@@ -249,7 +249,7 @@ export function OrganizerEventDetail({ eventId }: Props) {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-160 text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/80 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <th className="px-3 py-3 sm:px-6">Nome</th>
@@ -341,6 +341,8 @@ export function OrganizerEventDetail({ eventId }: Props) {
             onClose={() => setModal("none")}
             eventTitle={event.title}
             eventDate={new Date(event.startsAt).toLocaleDateString("pt-BR")}
+            coverImageUrl={event.coverImageUrl}
+            onViewEvent={() => setModal("none")}
           />
         )}
 

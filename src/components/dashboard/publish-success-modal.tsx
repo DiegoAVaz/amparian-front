@@ -1,24 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { X } from "lucide-react";
 
 import { Button, IconButton } from "@/components/ui";
 
 type Props = {
-  onClose: () => void;
+  onCloseAction: () => void;
   eventTitle?: string;
   eventOrg?: string;
   eventDate?: string | null;
-  onViewEvent?: () => void;
+  coverImageUrl?: string | null;
+  onViewEventAction: () => void;
 };
 
 export function PublishSuccessModal({
-  onClose,
+  onCloseAction,
   eventTitle,
   eventOrg,
   eventDate,
-  onViewEvent,
+  coverImageUrl,
+  onViewEventAction,
 }: Props) {
+  const [capaComFalha, setCapaComFalha] = useState<string | null>(null);
+  const mostraCapa = Boolean(coverImageUrl) && capaComFalha !== coverImageUrl;
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
       <div className="relative max-h-[92dvh] w-full max-w-sm overflow-y-auto rounded-t-2xl bg-white p-5 text-center shadow-xl sm:rounded-2xl sm:p-8">
@@ -26,7 +32,7 @@ export function PublishSuccessModal({
           className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 sm:right-4 sm:top-4"
           icon={<X size={18} strokeWidth={2} aria-hidden="true" />}
           label="Fechar"
-          onClick={onClose}
+          onClick={onCloseAction}
           size="sm"
           variant="ghost"
         />
@@ -37,8 +43,18 @@ export function PublishSuccessModal({
         </p>
 
         <div className="my-5 flex overflow-hidden rounded-xl bg-gray-100 text-left shadow-sm">
-          <div className="flex w-20 flex-shrink-0 items-center justify-center bg-gray-300">
-            <span className="px-1 text-center text-[8px] text-gray-400">evento.jpg</span>
+          <div className="flex w-20 shrink-0 items-center justify-center overflow-hidden bg-gray-200">
+            {mostraCapa ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coverImageUrl ?? ""}
+                alt=""
+                className="h-full w-full object-cover"
+                onError={() => setCapaComFalha(coverImageUrl ?? null)}
+              />
+            ) : (
+              <span className="px-1 text-center text-[10px] text-gray-400">Sem imagem</span>
+            )}
           </div>
           <div className="flex flex-col justify-center gap-0.5 px-3 py-2">
             <p className="text-sm font-semibold text-brand-teal">{eventTitle ?? "Novo evento"}</p>
@@ -65,7 +81,7 @@ export function PublishSuccessModal({
             />
             <IconButton
               type="button"
-              className="rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white hover:opacity-90"
+              className="rounded-full bg-linear-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white hover:opacity-90"
               icon={<InstagramIcon />}
               label="Compartilhar no Instagram"
               size="sm"
@@ -77,16 +93,15 @@ export function PublishSuccessModal({
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:gap-3">
           <Button
             type="button"
-            onClick={onViewEvent}
+            onClick={onViewEventAction}
             className="flex-1"
-            disabled={!onViewEvent}
             fullWidth
           >
             Ver meu evento
           </Button>
           <Button
             type="button"
-            onClick={onClose}
+            onClick={onCloseAction}
             className="flex-1"
             fullWidth
             variant="secondary"
