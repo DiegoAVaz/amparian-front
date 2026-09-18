@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
+  Avatar,
   Button,
   FormAlert,
   FormField,
@@ -11,7 +12,11 @@ import {
   TextInput,
 } from "@/components/ui";
 import { updateStoredUser } from "@/lib/auth";
-import { getMyProfile, updateMyProfile, type UserProfile } from "@/lib/amparian-api";
+import {
+  getMyProfile,
+  updateMyProfile,
+  type UserProfile,
+} from "@/lib/amparian-api";
 import {
   ApiError,
   getApiFormError,
@@ -24,6 +29,7 @@ import {
   isValidBrazilianPhone,
 } from "@/lib/phone";
 
+import { AvatarUploadModal } from "./avatar-upload-modal";
 import { DashboardShell } from "./dashboard-shell";
 
 type FormState = {
@@ -33,7 +39,6 @@ type FormState = {
   state: string;
   bio: string;
   publicOrganizationName: string;
-  avatarUrl: string;
 };
 
 type ProfileField = keyof FormState;
@@ -41,16 +46,17 @@ type ProfileField = keyof FormState;
 const PROFILE_FIELD_MAP: ApiErrorFieldMap<ProfileField> = {
   public_organization_name: "publicOrganizationName",
   publicOrganizationName: "publicOrganizationName",
-  avatar_url: "avatarUrl",
-  avatarUrl: "avatarUrl",
 };
 
 export function SettingsContent() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<ProfileField>>({});
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<ProfileField>>(
+    {},
+  );
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -66,17 +72,22 @@ export function SettingsContent() {
           setProfile(nextProfile);
           setForm({
             name: nextProfile.name,
-            phone: nextProfile.phone ? formatBrazilianPhone(nextProfile.phone) : "",
+            phone: nextProfile.phone
+              ? formatBrazilianPhone(nextProfile.phone)
+              : "",
             city: nextProfile.city ?? "",
             state: nextProfile.state ?? "",
             bio: nextProfile.bio ?? "",
             publicOrganizationName: nextProfile.publicOrganizationName ?? "",
-            avatarUrl: nextProfile.avatarUrl ?? "",
           });
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : "Não foi possível carregar o perfil.");
+          setError(
+            err instanceof ApiError
+              ? err.message
+              : "Não foi possível carregar o perfil.",
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -88,8 +99,6 @@ export function SettingsContent() {
       cancelled = true;
     };
   }, []);
-
-  const initials = useMemo(() => getInitials(form.name || profile?.name || ""), [form.name, profile]);
 
   async function handleSave() {
     const localErrors = getLocalFieldErrors();
@@ -113,7 +122,6 @@ export function SettingsContent() {
         state: nullable(form.state)?.toUpperCase() ?? null,
         bio: nullable(form.bio),
         publicOrganizationName: nullable(form.publicOrganizationName),
-        avatarUrl: nullable(form.avatarUrl),
       });
 
       setProfile(nextProfile);
@@ -122,16 +130,15 @@ export function SettingsContent() {
         phone: nextProfile.phone ? formatBrazilianPhone(nextProfile.phone) : "",
       }));
       updateStoredUser({ name: nextProfile.name, email: nextProfile.email });
+
       setSuccess("Perfil atualizado com sucesso.");
     } catch (err) {
-      const {
-        fieldErrors: nextFieldErrors,
-        formError,
-      } = getApiFormError<ProfileField>(
-        err,
-        "Não foi possível salvar suas alterações.",
-        { fieldMap: PROFILE_FIELD_MAP },
-      );
+      const { fieldErrors: nextFieldErrors, formError } =
+        getApiFormError<ProfileField>(
+          err,
+          "Não foi possível salvar suas alterações.",
+          { fieldMap: PROFILE_FIELD_MAP },
+        );
       setFieldErrors(nextFieldErrors);
       setError(formError);
     } finally {
@@ -149,10 +156,23 @@ export function SettingsContent() {
             <p className="text-sm text-gray-500">Carregando perfil...</p>
           ) : (
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex h-36 w-36 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-cyan-500 text-3xl font-bold text-white">
-                  {initials}
-                </div>
+              <div className="flex w-full flex-col items-center gap-2 lg:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setAvatarModalOpen(true)}
+                  disabled={saving}
+                  className="group relative cursor-pointer rounded-full ring-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal disabled:cursor-not-allowed disabled:opacity-60"
+                  aria-label="Alterar foto de perfil"
+                >
+                  <Avatar
+                    name={form.name || profile?.name || ""}
+                    src={profile?.avatarUrl}
+                    size="md"
+                  />
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-sm font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                    Alterar
+                  </span>
+                </button>
               </div>
 
               <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -192,7 +212,9 @@ export function SettingsContent() {
                     <TextInput
                       maxLength={2}
                       value={form.state}
-                      onChange={(e) => updateField("state", e.target.value.toUpperCase())}
+                      onChange={(e) =>
+                        updateField("state", e.target.value.toUpperCase())
+                      }
                       error={fieldErrors.state}
                     />
                   </FormField>
@@ -203,20 +225,10 @@ export function SettingsContent() {
                   >
                     <TextInput
                       value={form.publicOrganizationName}
-                      onChange={(e) => updateField("publicOrganizationName", e.target.value)}
+                      onChange={(e) =>
+                        updateField("publicOrganizationName", e.target.value)
+                      }
                       error={fieldErrors.publicOrganizationName}
-                    />
-                  </FormField>
-                  <FormField
-                    label="URL do avatar"
-                    className="sm:col-span-2"
-                    error={fieldErrors.avatarUrl}
-                  >
-                    <TextInput
-                      type="url"
-                      value={form.avatarUrl}
-                      onChange={(e) => updateField("avatarUrl", e.target.value)}
-                      error={fieldErrors.avatarUrl}
                     />
                   </FormField>
                 </div>
@@ -252,7 +264,9 @@ export function SettingsContent() {
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-bold text-brand-teal">Segurança e acesso</h2>
+            <h2 className="text-sm font-bold text-brand-teal">
+              Segurança e acesso
+            </h2>
             <ul className="mt-3 flex flex-col gap-2 text-sm">
               <li>
                 <MutedUnderlineLink href="/home/em-breve">
@@ -270,7 +284,11 @@ export function SettingsContent() {
           <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-bold text-brand-teal">Plano atual</h2>
             <p className="mt-3 text-sm text-gray-700">
-              Seu plano é <span className="font-semibold">{profile?.plan === "pro" ? "Pro" : "Básico"}</span>.
+              Seu plano é{" "}
+              <span className="font-semibold">
+                {profile?.plan === "pro" ? "Pro" : "Básico"}
+              </span>
+              .
             </p>
             <MutedUnderlineLink
               href="/home/em-breve"
@@ -297,10 +315,22 @@ export function SettingsContent() {
           </section>
         </div>
       </main>
+
+      {avatarModalOpen ? (
+        <AvatarUploadModal
+          name={form.name || profile?.name || ""}
+          savedUrl={profile?.avatarUrl}
+          onSaved={setProfile}
+          onClose={() => setAvatarModalOpen(false)}
+        />
+      ) : null}
     </DashboardShell>
   );
 
-  function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
+  function updateField<K extends keyof FormState>(
+    field: K,
+    value: FormState[K],
+  ) {
     setForm((current) => ({ ...current, [field]: value }));
     setFieldErrors((current) => ({ ...current, [field]: undefined }));
     setSuccess("");
@@ -322,7 +352,8 @@ export function SettingsContent() {
     const nextErrors: ApiFieldErrors<ProfileField> = {};
     if (!form.name.trim()) nextErrors.name = "Informe seu nome.";
     if (form.phone.trim() && !isValidBrazilianPhone(form.phone)) {
-      nextErrors.phone = "Informe o telefone no formato (DDD) xxxxx-xxxx ou (DDD) xxxx-xxxx.";
+      nextErrors.phone =
+        "Informe o telefone no formato (DDD) xxxxx-xxxx ou (DDD) xxxx-xxxx.";
     }
     if (form.state.trim() && form.state.trim().length !== 2) {
       nextErrors.state = "Informe a UF com 2 letras.";
@@ -338,19 +369,9 @@ const emptyForm: FormState = {
   state: "",
   bio: "",
   publicOrganizationName: "",
-  avatarUrl: "",
 };
 
 function nullable(value: string) {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
-}
-
-function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "AM";
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
 }

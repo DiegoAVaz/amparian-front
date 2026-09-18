@@ -2,19 +2,19 @@
 
 import { X } from "lucide-react";
 
-import { Button, IconButton } from "@/components/ui";
+import { Avatar, Button, IconButton } from "@/components/ui";
 import type { SubscriberRecord } from "@/lib/amparian-api";
 
 type Props = {
   subscriber: SubscriberRecord;
-  onClose: () => void;
-  onConfirmPresence: () => void;
+  onCloseAction: () => void;
+  onConfirmPresenceAction: () => void;
 };
 
-export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence }: Props) {
+export function SubscriberProfileModal({ subscriber, onCloseAction, onConfirmPresenceAction }: Props) {
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-60 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-perfil-titulo"
@@ -24,7 +24,7 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
           className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-transparent hover:text-gray-500"
           icon={<X size={16} strokeWidth={2} aria-hidden="true" />}
           label="Fechar"
-          onClick={onClose}
+          onClick={onCloseAction}
           size="sm"
           variant="ghost"
         />
@@ -34,13 +34,7 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
         </h2>
 
         <div className="mt-6 flex flex-col items-center gap-4 border-b border-gray-100 pb-6 sm:flex-row sm:items-start">
-          <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-400 text-2xl font-bold text-white">
-            {subscriber.name
-              .split(" ")
-              .map((p) => p[0])
-              .slice(0, 2)
-              .join("")}
-          </div>
+          <Avatar name={subscriber.name} size="sm" />
           <div className="flex flex-1 flex-col items-center text-center sm:items-start sm:text-left">
             <p className="text-base font-semibold text-gray-900">{subscriber.name}</p>
             <p className="text-sm text-gray-500">{subscriber.role || "Voluntário"}</p>
@@ -60,7 +54,7 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
         <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <Button
             type="button"
-            onClick={onClose}
+            onClick={onCloseAction}
             className="w-full sm:w-auto"
             variant="outline"
           >
@@ -69,7 +63,7 @@ export function SubscriberProfileModal({ subscriber, onClose, onConfirmPresence 
           {subscriber.status !== "confirmed" && (
             <Button
               type="button"
-              onClick={onConfirmPresence}
+              onClick={onConfirmPresenceAction}
               className="w-full sm:w-auto"
               variant="success"
             >

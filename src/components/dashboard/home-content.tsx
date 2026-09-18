@@ -126,8 +126,8 @@ export function HomeContent() {
     <DashboardShell activeNav="home">
       <>
         <main className="flex flex-1 flex-col gap-6 overflow-auto p-4 sm:p-6">
-          <div className="flex min-h-[12rem] flex-col overflow-hidden rounded-xl shadow-sm sm:min-h-0 sm:h-48 sm:flex-row">
-            <div className="flex min-h-[8rem] flex-1 items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-700 px-6 text-center sm:min-h-0">
+          <div className="flex min-h-48 flex-col overflow-hidden rounded-xl shadow-sm sm:min-h-0 sm:h-48 sm:flex-row">
+            <div className="flex min-h-32 flex-1 items-center justify-center bg-linear-to-br from-emerald-500 to-teal-700 px-6 text-center sm:min-h-0">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/70">
                   Comunidade em ação
@@ -137,7 +137,7 @@ export function HomeContent() {
                 </p>
               </div>
             </div>
-            <div className="flex w-full flex-shrink-0 flex-col items-start justify-center gap-3 bg-[#064e3b] p-5 sm:w-72 sm:p-7">
+            <div className="flex w-full shrink-0 flex-col items-start justify-center gap-3 bg-[#064e3b] p-5 sm:w-72 sm:p-7">
               <p className="text-sm font-bold leading-snug text-white">
                 Você sabia que pode criar seu próprio evento?
               </p>
@@ -188,7 +188,7 @@ export function HomeContent() {
                       key={event.id}
                       className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm sm:flex-row"
                     >
-                      <div className="flex h-32 w-full flex-shrink-0 items-center justify-center bg-gray-200 sm:h-auto sm:w-28">
+                      <div className="flex h-32 w-full shrink-0 items-center justify-center bg-gray-200 sm:h-auto sm:w-28">
                         {event.coverImageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={event.coverImageUrl} alt="" className="h-full w-full object-cover" />
@@ -220,7 +220,7 @@ export function HomeContent() {
               )}
             </div>
 
-            <div className="flex w-full flex-shrink-0 flex-col gap-3 lg:w-80">
+            <div className="flex w-full shrink-0 flex-col gap-3 lg:w-80">
               <h2 className="text-base font-semibold text-brand-teal">Meu impacto</h2>
               <div className="grid grid-cols-2 gap-3">
                 {statCards.map((item) => (
@@ -252,13 +252,14 @@ export function HomeContent() {
         {modal === "event-detail" && selectedEvent && (
           <EventDetailModal event={selectedEvent} onClose={() => setModal("none")} />
         )}
-        {modal === "publish-success" && (
+        {modal === "publish-success" && savedEvent && (
           <PublishSuccessModal
-            onClose={() => setModal("none")}
-            eventTitle={savedEvent?.title}
+            onCloseAction={() => setModal("none")}
+            eventTitle={savedEvent.title}
             eventOrg={userName ?? undefined}
-            eventDate={savedEvent ? new Date(savedEvent.startsAt).toLocaleDateString("pt-BR") : null}
-            onViewEvent={() => savedEvent && router.push(`/home/meus-eventos/${savedEvent.id}`)}
+            eventDate={new Date(savedEvent.startsAt).toLocaleDateString("pt-BR")}
+            coverImageUrl={savedEvent.coverImageUrl}
+            onViewEventAction={() => router.push(`/home/meus-eventos/${savedEvent.id}`)}
           />
         )}
         {modal === "publish-error" && (

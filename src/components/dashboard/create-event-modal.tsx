@@ -10,6 +10,7 @@ import {
   FormAlert,
   FormField,
   IconButton,
+  ImageUploadField,
   Textarea,
   TextInput,
 } from "@/components/ui";
@@ -18,10 +19,16 @@ import {
   type LookupOption,
   type OrganizerEventDetail,
   createOrganizerEvent,
+  deleteEventCover,
   getLookups,
   updateOrganizerEvent,
+  uploadEventCover,
 } from "@/lib/amparian-api";
-import { getApiFormError, type ApiErrorFieldMap, type ApiFieldErrors } from "@/lib/api";
+import {
+  getApiFormError,
+  type ApiErrorFieldMap,
+  type ApiFieldErrors,
+} from "@/lib/api";
 
 type Props = {
   onClose: () => void;
@@ -42,7 +49,6 @@ type FormState = {
   locationName: string;
   isRemote: boolean;
   capacity: string;
-  coverImageUrl: string;
   highlightSkill: string;
   typeCodes: string[];
   requirementCodes: string[];
@@ -62,7 +68,6 @@ const EMPTY_FORM: FormState = {
   locationName: "",
   isRemote: false,
   capacity: "",
-  coverImageUrl: "",
   highlightSkill: "",
   typeCodes: [],
   requirementCodes: [],
@@ -75,14 +80,32 @@ const EVENT_FIELD_MAP: ApiErrorFieldMap<EventFormField> = {
   "body.endsAt": "endDate",
 };
 
-export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Props) {
-  const [form, setForm] = useState<FormState>(() => mapEventToForm(initialEvent));
+export function CreateEventModal({
+  onClose,
+  onSaved,
+  onError,
+  initialEvent,
+}: Props) {
+  const [form, setForm] = useState<FormState>(() =>
+    mapEventToForm(initialEvent),
+  );
   const [loading, setLoading] = useState(false);
   const [loadingLookups, setLoadingLookups] = useState(false);
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<ApiFieldErrors<EventFormField>>({});
+  const [fieldErrors, setFieldErrors] = useState<
+    ApiFieldErrors<EventFormField>
+  >({});
   const [eventTypeOptions, setEventTypeOptions] = useState<LookupOption[]>([]);
-  const [requirementOptions, setRequirementOptions] = useState<LookupOption[]>([]);
+  const [requirementOptions, setRequirementOptions] = useState<LookupOption[]>(
+    [],
+  );
+
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(
+    initialEvent?.coverImageUrl ?? null,
+  );
+  const [coverError, setCoverError] = useState("");
+  const [coverRemoved, setCoverRemoved] = useState(false);
 
   const title = initialEvent ? "Editar evento" : "Criar evento";
   const primaryLabel = initialEvent ? "Salvar e publicar" : "Publicar evento";
@@ -120,37 +143,63 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
       description: nullable(form.description),
       rulesTerms: nullable(form.rulesTerms),
       startsAt: combineDateTime(form.eventDate, form.eventTime),
-      endsAt: form.endDate && form.endTime ? combineDateTime(form.endDate, form.endTime) : null,
+      endsAt:
+        form.endDate && form.endTime
+          ? combineDateTime(form.endDate, form.endTime)
+          : null,
       locationName: nullable(form.locationName),
       isRemote: form.isRemote,
       capacity: form.capacity.trim() ? Number(form.capacity) : null,
-      coverImageUrl: nullable(form.coverImageUrl),
       highlightSkill: nullable(form.highlightSkill),
       typeCodes: form.typeCodes,
       requirementCodes: form.requirementCodes,
       publish,
     };
 
+    let event: OrganizerEventDetail;
     try {
-      const event = initialEvent
+      event = initialEvent
         ? await updateOrganizerEvent(initialEvent.id, payload)
         : await createOrganizerEvent(payload);
-      onSaved(event, publish ? "published" : "draft");
     } catch (err) {
-      const {
-        fieldErrors: nextFieldErrors,
-        formError,
-      } = getApiFormError<EventFormField>(
-        err,
-        "Não foi possível salvar o evento agora.",
-        { fieldMap: EVENT_FIELD_MAP },
-      );
+      const { fieldErrors: nextFieldErrors, formError } =
+        getApiFormError<EventFormField>(
+          err,
+          "Não foi possível salvar o evento agora.",
+          { fieldMap: EVENT_FIELD_MAP },
+        );
       setFieldErrors(nextFieldErrors);
       setError(formError);
       if (formError) onError(formError);
       setLoading(false);
       return;
     }
+
+    let coverWarning: string | null = null;
+
+    if (coverFile || coverRemoved) {
+      const action = coverFile ? "enviar" : "remover";
+      try {
+        event = coverFile
+          ? await uploadEventCover(event.id, coverFile)
+          : await deleteEventCover(event.id);
+        setCoverFile(null);
+        setCoverRemoved(false);
+        setCoverUrl(event.coverImageUrl);
+      } catch (err) {
+        const { formError } = getApiFormError<EventFormField>(
+          err,
+          `não foi possível ${action} a imagem`,
+          { fieldMap: EVENT_FIELD_MAP },
+        );
+        const reason = formError || `não foi possível ${action} a imagem`;
+        coverWarning = initialEvent
+          ? `O evento foi salvo, mas ${reason}. Tente novamente pela edição.`
+          : `O evento foi criado, mas ${reason}. Abra a edição para enviar a capa.`;
+      }
+    }
+    onSaved(event, publish ? "published" : "draft");
+    if (coverWarning) onError(coverWarning);
 
     setLoading(false);
   }
@@ -171,7 +220,11 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
 
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
           <div className="flex min-w-0 flex-1 flex-col gap-4">
-            <FormField label="Título do evento" required error={fieldErrors.title}>
+            <FormField
+              label="Título do evento"
+              required
+              error={fieldErrors.title}
+            >
               <TextInput
                 type="text"
                 value={form.title}
@@ -181,7 +234,11 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
               />
             </FormField>
 
-            <FormField label="Resumo do evento" required error={fieldErrors.summary}>
+            <FormField
+              label="Resumo do evento"
+              required
+              error={fieldErrors.summary}
+            >
               <Textarea
                 rows={3}
                 value={form.summary}
@@ -217,7 +274,11 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
             <FormField
               label="Data e local"
               required
-              error={fieldErrors.eventDate || fieldErrors.eventTime || fieldErrors.locationName}
+              error={
+                fieldErrors.eventDate ||
+                fieldErrors.eventTime ||
+                fieldErrors.locationName
+              }
             >
               <div className="flex flex-col gap-2 sm:flex-row">
                 <TextInput
@@ -282,7 +343,10 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
             />
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="Quantidade de vagas" error={fieldErrors.capacity}>
+              <FormField
+                label="Quantidade de vagas"
+                error={fieldErrors.capacity}
+              >
                 <TextInput
                   type="number"
                   min={1}
@@ -291,24 +355,42 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
                   error={fieldErrors.capacity}
                 />
               </FormField>
-              <FormField label="Habilidade em destaque" error={fieldErrors.highlightSkill}>
+              <FormField
+                label="Habilidade em destaque"
+                error={fieldErrors.highlightSkill}
+              >
                 <TextInput
                   type="text"
                   value={form.highlightSkill}
-                  onChange={(e) => updateField("highlightSkill", e.target.value)}
+                  onChange={(e) =>
+                    updateField("highlightSkill", e.target.value)
+                  }
                   placeholder="Ex: Consciência ambiental"
                   error={fieldErrors.highlightSkill}
                 />
               </FormField>
-              <FormField label="URL da capa" error={fieldErrors.coverImageUrl}>
-                <TextInput
-                  type="url"
-                  value={form.coverImageUrl}
-                  onChange={(e) => updateField("coverImageUrl", e.target.value)}
-                  placeholder="https://..."
-                  error={fieldErrors.coverImageUrl}
-                />
-              </FormField>
+              <ImageUploadField
+                className="sm:col-span-2"
+                label="Capa do evento"
+                layout="stacked"
+                currentUrl={coverRemoved ? null : coverUrl}
+                onSelect={(file) => {
+                  setCoverFile(file);
+                  setCoverError("");
+                  if (file) setCoverRemoved(false);
+                }}
+                onRemove={
+                  initialEvent
+                    ? () => {
+                        setCoverRemoved(true);
+                        setCoverFile(null);
+                        setCoverError("");
+                      }
+                    : undefined
+                }
+                error={coverError}
+                disabled={loading}
+              />
             </div>
 
             <FormAlert variant="error">{error}</FormAlert>
@@ -354,7 +436,10 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
     </div>
   );
 
-  function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
+  function updateField<K extends keyof FormState>(
+    field: K,
+    value: FormState[K],
+  ) {
     setForm((current) => ({ ...current, [field]: value }));
     setFieldErrors((current) => ({ ...current, [field]: undefined }));
   }
@@ -377,7 +462,8 @@ export function CreateEventModal({ onClose, onSaved, onError, initialEvent }: Pr
   function getRequiredFieldErrors(): ApiFieldErrors<EventFormField> {
     const nextErrors: ApiFieldErrors<EventFormField> = {};
     if (!form.title.trim()) nextErrors.title = "Informe o título do evento.";
-    if (!form.summary.trim()) nextErrors.summary = "Informe o resumo do evento.";
+    if (!form.summary.trim())
+      nextErrors.summary = "Informe o resumo do evento.";
     if (!form.eventDate) nextErrors.eventDate = "Informe a data do evento.";
     if (!form.eventTime) nextErrors.eventTime = "Informe o horário do evento.";
     if (form.typeCodes.length === 0) {
@@ -411,7 +497,6 @@ function mapEventToForm(event?: OrganizerEventDetail | null): FormState {
     locationName: event.locationName ?? "",
     isRemote: event.isRemote,
     capacity: event.capacity ? String(event.capacity) : "",
-    coverImageUrl: event.coverImageUrl ?? "",
     highlightSkill: event.highlightSkill ?? "",
     typeCodes: event.types.map((item) => item.code),
     requirementCodes: event.requirements.map((item) => item.code),
@@ -420,7 +505,9 @@ function mapEventToForm(event?: OrganizerEventDetail | null): FormState {
 
 function splitIsoDateTime(value: string) {
   const date = new Date(value);
-  const tzAdjusted = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  const tzAdjusted = new Date(
+    date.getTime() - date.getTimezoneOffset() * 60000,
+  );
   return {
     date: tzAdjusted.toISOString().slice(0, 10),
     time: tzAdjusted.toISOString().slice(11, 16),
@@ -435,3 +522,4 @@ function nullable(value: string): string | null {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
 }
+
