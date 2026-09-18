@@ -209,11 +209,11 @@ export function MyEventsList() {
         )}
         {modal === "publish-success" && savedEvent && (
           <PublishSuccessModal
-            onClose={() => setModal("none")}
+            onCloseAction={() => setModal("none")}
             eventTitle={savedEvent.title}
             eventDate={new Date(savedEvent.startsAt).toLocaleDateString("pt-BR")}
             coverImageUrl={savedEvent.coverImageUrl}
-            onViewEvent={() => router.push(`/home/meus-eventos/${savedEvent.id}`)}
+            onViewEventAction={() => router.push(`/home/meus-eventos/${savedEvent.id}`)}
           />
         )}
         {modal === "publish-error" && (
