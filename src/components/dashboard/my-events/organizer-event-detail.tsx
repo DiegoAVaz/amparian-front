@@ -316,8 +316,8 @@ export function OrganizerEventDetail({ eventId }: Props) {
         {subscriberModal && (
           <SubscriberProfileModal
             subscriber={subscriberModal}
-            onClose={() => setSubscriberModal(null)}
-            onConfirmPresence={() => void handleConfirmPresence(subscriberModal.id)}
+            onCloseAction={() => setSubscriberModal(null)}
+            onConfirmPresenceAction={() => void handleConfirmPresence(subscriberModal.id)}
           />
         )}
 
@@ -338,11 +338,11 @@ export function OrganizerEventDetail({ eventId }: Props) {
 
         {modal === "publish-success" && (
           <PublishSuccessModal
-            onClose={() => setModal("none")}
+            onCloseAction={() => setModal("none")}
             eventTitle={event.title}
             eventDate={new Date(event.startsAt).toLocaleDateString("pt-BR")}
             coverImageUrl={event.coverImageUrl}
-            onViewEvent={() => setModal("none")}
+            onViewEventAction={() => setModal("none")}
           />
         )}
 
