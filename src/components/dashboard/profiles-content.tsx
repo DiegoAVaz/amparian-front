@@ -18,6 +18,7 @@ import {
   getMyStats,
 } from "@/lib/amparian-api";
 import { ApiError } from "@/lib/api";
+import { formatHours } from "@/lib/hours";
 import { formatBrazilianPhone } from "@/lib/phone";
 
 import { DashboardShell } from "./dashboard-shell";
@@ -68,7 +69,7 @@ export function ProfilesContent() {
 
   const statCards = stats
     ? [
-        { label: "HORAS DOADAS", value: String(stats.hoursDonated) },
+        { label: "HORAS DOADAS", value: formatHours(stats.hoursDonated) },
         { label: "CAUSAS APOIADAS", value: String(stats.causesSupported) },
         { label: "EVENTOS FREQUENTADOS", value: String(stats.eventsAttended) },
         { label: "EVENTOS CRIADOS", value: String(stats.eventsCreated) },

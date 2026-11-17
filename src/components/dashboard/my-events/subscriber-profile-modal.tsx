@@ -8,10 +8,10 @@ import type { SubscriberRecord } from "@/lib/amparian-api";
 type Props = {
   subscriber: SubscriberRecord;
   onCloseAction: () => void;
-  onConfirmPresenceAction: () => void;
+  onConfirmRegistrationAction: () => void;
 };
 
-export function SubscriberProfileModal({ subscriber, onCloseAction, onConfirmPresenceAction }: Props) {
+export function SubscriberProfileModal({ subscriber, onCloseAction, onConfirmRegistrationAction }: Props) {
   return (
     <div
       className="fixed inset-0 z-60 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
@@ -63,11 +63,11 @@ export function SubscriberProfileModal({ subscriber, onCloseAction, onConfirmPre
           {subscriber.status !== "confirmed" && (
             <Button
               type="button"
-              onClick={onConfirmPresenceAction}
+              onClick={onConfirmRegistrationAction}
               className="w-full sm:w-auto"
               variant="success"
             >
-              Confirmar presença
+              Confirmar inscrição
             </Button>
           )}
         </div>

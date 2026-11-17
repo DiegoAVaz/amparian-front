@@ -29,6 +29,12 @@ import {
   type ApiErrorFieldMap,
   type ApiFieldErrors,
 } from "@/lib/api";
+import {
+  durationWorkloadHours,
+  formatHours,
+  formatHoursLabel,
+  parseHoursInput,
+} from "@/lib/hours";
 
 type Props = {
   onClose: () => void;
@@ -49,6 +55,7 @@ type FormState = {
   locationName: string;
   isRemote: boolean;
   capacity: string;
+  workloadHours: string;
   highlightSkill: string;
   typeCodes: string[];
   requirementCodes: string[];
@@ -68,6 +75,7 @@ const EMPTY_FORM: FormState = {
   locationName: "",
   isRemote: false,
   capacity: "",
+  workloadHours: "",
   highlightSkill: "",
   typeCodes: [],
   requirementCodes: [],
@@ -150,6 +158,8 @@ export function CreateEventModal({
       locationName: nullable(form.locationName),
       isRemote: form.isRemote,
       capacity: form.capacity.trim() ? Number(form.capacity) : null,
+      // Vazio vai como `null`: o organizador não informou, e a API usa a duração ou só o período.
+      workloadHours: parseHoursInput(form.workloadHours),
       highlightSkill: nullable(form.highlightSkill),
       typeCodes: form.typeCodes,
       requirementCodes: form.requirementCodes,
@@ -356,6 +366,20 @@ export function CreateEventModal({
                 />
               </FormField>
               <FormField
+                label="Carga horária (horas)"
+                error={fieldErrors.workloadHours}
+              >
+                <TextInput
+                  type="text"
+                  inputMode="decimal"
+                  value={form.workloadHours}
+                  onChange={(e) => updateField("workloadHours", e.target.value)}
+                  placeholder="Ex: 4 ou 2,5"
+                  error={fieldErrors.workloadHours}
+                />
+              </FormField>
+              <FormField
+                className="sm:col-span-2"
                 label="Habilidade em destaque"
                 error={fieldErrors.highlightSkill}
               >
@@ -469,8 +493,31 @@ export function CreateEventModal({
     if (form.typeCodes.length === 0) {
       nextErrors.typeCodes = "Informe ao menos um tipo de evento.";
     }
+    // Data preenchida, mas impossível de interpretar (ano com cinco dígitos, por exemplo): barra
+    // aqui, antes de `combineDateTime` lançar no envio e deixar o botão travado em "Salvando...".
+    if (form.eventDate && form.eventTime && !toIsoOrNull(form.eventDate, form.eventTime)) {
+      nextErrors.eventDate = "Informe uma data válida.";
+    }
+    if (form.endDate && form.endTime && !toIsoOrNull(form.endDate, form.endTime)) {
+      nextErrors.endDate = "Informe uma data de encerramento válida.";
+    }
+
+    // A carga horária é opcional (RC-03); só um texto que não é número é barrado aqui.
+    const workload = parseHoursInput(form.workloadHours);
+    if (workload !== null && Number.isNaN(workload)) {
+      nextErrors.workloadHours = "Informe a carga horária em horas, como 4 ou 2,5.";
+    }
     return nextErrors;
   }
+}
+
+// Monta o instante sem lançar: `toISOString()` lança `RangeError` em data inválida (um ano de cinco
+// dígitos digitado no campo de data, por exemplo), e esta função roda a cada tecla para recalcular
+// a dica de carga horária — um erro aqui derrubaria a página inteira.
+function toIsoOrNull(date: string, time: string): string | null {
+  if (!date || !time) return null;
+  const value = new Date(`${date}T${time}:00`);
+  return Number.isNaN(value.getTime()) ? null : value.toISOString();
 }
 
 function toCheckboxOptions(options: LookupOption[]) {
@@ -497,6 +544,9 @@ function mapEventToForm(event?: OrganizerEventDetail | null): FormState {
     locationName: event.locationName ?? "",
     isRemote: event.isRemote,
     capacity: event.capacity ? String(event.capacity) : "",
+    // Só a carga informada; a calculada aparece na dica do campo, nunca no valor.
+    workloadHours:
+      event.workloadHours !== null ? formatHours(event.workloadHours) : "",
     highlightSkill: event.highlightSkill ?? "",
     typeCodes: event.types.map((item) => item.code),
     requirementCodes: event.requirements.map((item) => item.code),
@@ -522,4 +572,3 @@ function nullable(value: string): string | null {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
 }
-

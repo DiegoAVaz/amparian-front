@@ -15,6 +15,7 @@ import {
   getPublicEvents,
 } from "@/lib/amparian-api";
 import { ApiError } from "@/lib/api";
+import { formatHours } from "@/lib/hours";
 
 import type { EventSummary } from "./types";
 import { CreateEventModal } from "./create-event-modal";
@@ -49,7 +50,7 @@ export function HomeContent() {
           setStats(nextStats);
         }
       } catch {
-        /* dashboard can still load events */
+        /* o painel ainda consegue carregar os eventos */
       }
     }
 
@@ -109,13 +110,13 @@ export function HomeContent() {
       const nextEvents = await getPublicEvents(query);
       setEvents(nextEvents);
     } catch {
-      /* keep current UI */
+      /* mantém a tela como está */
     }
   }
 
   const statCards = stats
     ? [
-        { label: "Horas doadas", value: stats.hoursDonated },
+        { label: "Horas doadas", value: formatHours(stats.hoursDonated) },
         { label: "Causas apoiadas", value: stats.causesSupported },
         { label: "Eventos frequentados", value: stats.eventsAttended },
         { label: "Eventos criados", value: stats.eventsCreated },

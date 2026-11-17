@@ -80,6 +80,7 @@ export type OrganizerEventDetail = {
   locationName: string | null;
   isRemote: boolean;
   capacity: number | null;
+  workloadHours: number | null;
   coverImageUrl: string | null;
   highlightSkill: string | null;
   status: "draft" | "published" | "cancelled";
@@ -112,6 +113,8 @@ export type MyRegistration = {
   };
 };
 
+export type AttendanceStatus = "present" | "absent";
+
 export type SubscriberRecord = {
   id: string;
   name: string;
@@ -121,6 +124,9 @@ export type SubscriberRecord = {
   cityUf: string;
   registrationDate: string;
   status: RegistrationStatus;
+  // Presença registrada pelo organizador; `null` sem marcação ou quando a inscrição não está
+  // confirmada (a API não devolve presença de inscrição pendente ou cancelada).
+  attendance: AttendanceStatus | null;
 };
 
 export type EventFormInput = {
@@ -133,6 +139,10 @@ export type EventFormInput = {
   locationName: string | null;
   isRemote: boolean;
   capacity: number | null;
+  // Carga horária informada pelo organizador; `null` quando não informada (RC-03: aí a API usa a
+  // duração, em evento de um dia, ou o certificado mostra só o período). Omitida, a API mantém o
+  // valor gravado.
+  workloadHours?: number | null;
   highlightSkill: string | null;
   typeCodes: string[];
   requirementCodes: string[];
@@ -250,6 +260,7 @@ type OrganizerEventApi = {
   location_name: string | null;
   is_remote: boolean;
   capacity: number | null;
+  workload_hours: number | null;
   cover_image_url: string | null;
   highlight_skill: string | null;
   status: "draft" | "published" | "cancelled";
@@ -305,6 +316,28 @@ export async function getOrganizerRegistrations(
   return res.data;
 }
 
+// Grava em lote a lista de chamada (PUT /me/events/:eventId/attendance). A lista de inscritos traz
+// o `id` como texto, mas a API exige número: a conversão fica aqui, para nenhuma tela esquecê-la.
+// A resposta traz só as inscrições confirmadas com presença gravada, sem ordem garantida — quem
+// chama deve casar por id, e a ausência na resposta quer dizer "sem marcação".
+export async function recordAttendance(
+  eventId: number | string,
+  items: Array<{ registrationId: string; status: AttendanceStatus }>,
+): Promise<Map<string, AttendanceStatus>> {
+  const res = await apiJson<{
+    data: Array<{ registrationId: number; status: AttendanceStatus }>;
+  }>(`/me/events/${eventId}/attendance`, {
+    method: "PUT",
+    json: {
+      items: items.map((item) => ({
+        registrationId: Number(item.registrationId),
+        status: item.status,
+      })),
+    },
+  });
+  return new Map(res.data.map((row) => [String(row.registrationId), row.status]));
+}
+
 export async function updateOrganizerRegistrationStatus(
   eventId: number | string,
   registrationId: number | string,
@@ -329,6 +362,10 @@ function mapOrganizerEvent(event: OrganizerEventApi): OrganizerEventDetail {
     locationName: event.location_name,
     isRemote: Boolean(event.is_remote),
     capacity: event.capacity === null ? null : Number(event.capacity),
+    workloadHours:
+      event.workload_hours === null || event.workload_hours === undefined
+        ? null
+        : Number(event.workload_hours),
     coverImageUrl: event.cover_image_url,
     highlightSkill: event.highlight_skill,
     status: event.status,
