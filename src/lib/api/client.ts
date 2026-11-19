@@ -130,7 +130,14 @@ function clearAuthCookie(): void {
 function redirectToLogin(): void {
   if (typeof window === "undefined") return;
   const current = window.location.pathname;
-  const publicPaths = ["/login", "/criar-conta", "/esqueci-minha-senha"];
+  // `/certificados` é a verificação pública: quem confere um certificado não precisa de conta, e uma
+  // sessão vencida no mesmo navegador não pode levá-lo para o login.
+  const publicPaths = [
+    "/login",
+    "/criar-conta",
+    "/esqueci-minha-senha",
+    "/certificados",
+  ];
   const isPublic = publicPaths.some((path) => current === path || current.startsWith(`${path}/`));
   if (!isPublic) {
     window.location.replace("/login?reason=session-expired");
@@ -233,4 +240,34 @@ export async function apiJson<T>(path: string, options?: ApiFetchOptions): Promi
   const res = await apiFetch(path, options);
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
+}
+
+export type ApiFile = {
+  blob: Blob;
+  /** O nome sugerido pela API em `Content-Disposition`; `null` se ela não mandou. */
+  fileName: string | null;
+};
+
+// Rotas que devolvem arquivo, como o PDF do certificado. Não dá para usar `apiJson`, que tentaria
+// ler o corpo como JSON; um link `<a href>` direto também não serve, porque a rota exige o token.
+// Os erros continuam vindo no envelope JSON, então o `apiFetch` os trata como em qualquer rota,
+// inclusive a renovação do token no 401.
+export async function apiBlob(
+  path: string,
+  options?: ApiFetchOptions,
+): Promise<ApiFile> {
+  const res = await apiFetch(path, options);
+  return {
+    blob: await res.blob(),
+    fileName: fileNameFromDisposition(res.headers.get("Content-Disposition")),
+  };
+}
+
+// A API manda `attachment; filename="certificado-amparian-XXXX-XXXX-XXXX.pdf"`, só com ASCII. O
+// cabeçalho só é legível porque a API o expõe no CORS; sem isso, chega `null`.
+function fileNameFromDisposition(header: string | null): string | null {
+  if (!header) return null;
+  const match = /filename="([^"]+)"/i.exec(header) ?? /filename=([^;]+)/i.exec(header);
+  const name = match?.[1]?.trim();
+  return name ? name : null;
 }
