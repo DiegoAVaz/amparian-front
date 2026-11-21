@@ -14,6 +14,7 @@ export function Checkbox({
   error,
   helperText,
   label,
+  required,
   ...props
 }: CheckboxProps) {
   const invalid = Boolean(error);
@@ -28,10 +29,13 @@ export function Checkbox({
         )}
         type="checkbox"
         aria-invalid={invalid || undefined}
+        required={required}
         {...props}
       />
       <span className="min-w-0">
         {label}
+        {/* Mesmo asterisco do FormField; o `required` do input é o que os leitores de tela anunciam. */}
+        {required && label ? <span className="text-red-600" aria-hidden="true"> *</span> : null}
         {helperText && !error ? (
           <span className="mt-1 block text-xs text-gray-500">{helperText}</span>
         ) : null}

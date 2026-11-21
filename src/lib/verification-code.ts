@@ -1,4 +1,4 @@
-// Código de verificação do certificado, do jeito que a API grava e confere (RC-07).
+// Código de verificação do certificado, do jeito que a API grava e confere.
 //
 // Espelha `normalizeVerificationCode` da API (`api_amparian/src/services/certificates/
 // verification-code.ts`): a tela recusa na hora o que não pode ser um código, sem gastar uma das

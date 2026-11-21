@@ -32,9 +32,9 @@ function nextDay(day: string): string {
   return new Date(Date.UTC(year, month - 1, date + 1)).toISOString().slice(0, 10);
 }
 
-// Evento "de um dia" (RC-03): dura até 24h e termina no mesmo dia ou na madrugada seguinte, até as
+// Evento "de um dia": dura até 24h e termina no mesmo dia ou na madrugada seguinte, até as
 // 6h, no horário de Brasília. Cópia de `isSingleDayEvent` da API — as duas precisam concordar.
-function isSingleDayEvent(start: Date, end: Date): boolean {
+export function isSingleDayEvent(start: Date, end: Date): boolean {
   const duration = end.getTime() - start.getTime();
   if (!(duration > 0) || duration > DAY_MS) return false;
   const s = brazilLocal(start);

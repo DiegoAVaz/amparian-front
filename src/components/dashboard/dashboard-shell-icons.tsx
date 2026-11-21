@@ -1,4 +1,5 @@
 import {
+  Award,
   Bell,
   Calendar,
   CircleHelp,
@@ -40,6 +41,10 @@ export function EventsNavIcon() {
 
 export function AgendaNavIcon() {
   return <Clock size={NAV_ICON_SIZE} strokeWidth={2} aria-hidden="true" />;
+}
+
+export function CertificatesNavIcon() {
+  return <Award size={NAV_ICON_SIZE} strokeWidth={2} aria-hidden="true" />;
 }
 
 export function PerfisNavIcon() {

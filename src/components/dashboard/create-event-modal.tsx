@@ -426,6 +426,7 @@ export function CreateEventModal({
             )}
             <CheckboxGroup
               legend="Tipo de evento"
+              required
               options={toCheckboxOptions(eventTypeOptions)}
               values={form.typeCodes}
               onChange={(values) => updateField("typeCodes", values)}

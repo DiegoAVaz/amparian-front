@@ -17,25 +17,33 @@ import { getMyProfile } from "@/lib/amparian-api";
 
 import { DashboardShell } from "./dashboard-shell";
 
-const CATEGORIES: { label: string; icon: ReactNode }[] = [
+// Só "Certificados e conquistas" tem página própria; as outras categorias ainda levam a "Em breve".
+const COMING_SOON = "/home/em-breve";
+
+const CATEGORIES: { label: string; href: string; icon: ReactNode }[] = [
   {
     label: "Primeiros passos",
+    href: COMING_SOON,
     icon: <Footprints size={28} strokeWidth={2} aria-hidden="true" />,
   },
   {
     label: "Gestão de eventos",
+    href: COMING_SOON,
     icon: <CalendarCog size={28} strokeWidth={2} aria-hidden="true" />,
   },
   {
     label: "Assinatura e pagamentos",
+    href: COMING_SOON,
     icon: <CreditCard size={28} strokeWidth={2} aria-hidden="true" />,
   },
   {
     label: "Segurança e conduta",
+    href: COMING_SOON,
     icon: <Shield size={28} strokeWidth={2} aria-hidden="true" />,
   },
   {
     label: "Certificados e conquistas",
+    href: "/home/certificados",
     icon: <Award size={28} strokeWidth={2} aria-hidden="true" />,
   },
 ];
@@ -58,7 +66,7 @@ export function HelpContent() {
           setProfileName(profile.name);
         }
       } catch {
-        /* keep stored user name or generic greeting */
+        /* mantém o nome guardado na sessão, ou a saudação genérica */
       }
     }
 
@@ -90,7 +98,7 @@ export function HelpContent() {
           {CATEGORIES.map((c) => (
             <Link
               key={c.label}
-              href="/home/em-breve"
+              href={c.href}
               className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-center shadow-sm transition-colors hover:border-brand-teal/30 hover:shadow-md"
             >
               <span className="text-brand-teal">{c.icon}</span>

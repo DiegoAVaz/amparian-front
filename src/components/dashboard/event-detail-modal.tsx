@@ -248,6 +248,7 @@ export function EventDetailModal({ event, onClose }: Props) {
                   }));
                 }}
                 label="Li e concordo com o termo de responsabilidade do evento."
+                required
                 error={fieldErrors.agreedResponsibility}
               />
 

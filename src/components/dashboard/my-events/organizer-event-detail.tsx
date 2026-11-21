@@ -12,6 +12,7 @@ import {
   type OrganizerEventDetail as OrganizerEventDetailRecord,
   type SubscriberRecord,
   deleteOrganizerEvent,
+  getAttendanceLockedIds,
   getOrganizerEvent,
   getOrganizerRegistrations,
   recordAttendance,
@@ -27,12 +28,13 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 import { AttendanceConfirmModal } from "./attendance-confirm-modal";
 import { SubscriberProfileModal } from "./subscriber-profile-modal";
+import { WorkloadModal } from "./workload-modal";
 
 type Props = {
   eventId: string;
 };
 
-type ModalState = "none" | "edit" | "publish-success" | "publish-error";
+type ModalState = "none" | "edit" | "workload" | "publish-success" | "publish-error";
 
 export function OrganizerEventDetail({ eventId }: Props) {
   const router = useRouter();
@@ -50,6 +52,16 @@ export function OrganizerEventDetail({ eventId }: Props) {
   const [savingAttendance, setSavingAttendance] = useState(false);
   const [attendanceError, setAttendanceError] = useState("");
   const [attendanceNotice, setAttendanceNotice] = useState("");
+  // Aviso da trava que apareceu durante a edição: alguém emitiu o certificado entre abrir a lista e
+  // salvar. Fica na página, e não no diálogo, porque o diálogo fecha.
+  const [lockWarning, setLockWarning] = useState("");
+  // Retorno do diálogo de carga horária de evento encerrado: confirmação, ou a recusa porque alguém
+  // emitiu o certificado com o diálogo aberto (RC-11).
+  const [workloadNotice, setWorkloadNotice] = useState("");
+  const [workloadWarning, setWorkloadWarning] = useState("");
+  // Fica `true` quando a API recusou a carga horária por já haver certificado: o botão some mesmo
+  // que a releitura dos inscritos falhe.
+  const [workloadLocked, setWorkloadLocked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,9 +133,12 @@ export function OrganizerEventDetail({ eventId }: Props) {
   }
 
   function markAttendance(registrationId: string, status: AttendanceStatus) {
+    const row = rows.find((item) => item.id === registrationId);
+    // A linha travada nem mostra os controles; a guarda cobre um clique que chegue mesmo assim.
+    if (row?.certificateIssued) return;
     setAttendanceNotice("");
     setAttendanceDraft((prev) => {
-      const saved = rows.find((row) => row.id === registrationId)?.attendance ?? null;
+      const saved = row?.attendance ?? null;
       // Voltar ao valor gravado desfaz a alteração, em vez de contá-la como pendente.
       return saved === status ? withoutKey(prev, registrationId) : { ...prev, [registrationId]: status };
     });
@@ -134,7 +149,9 @@ export function OrganizerEventDetail({ eventId }: Props) {
     setAttendanceDraft(() => {
       const next: Record<string, AttendanceStatus> = {};
       for (const row of rows) {
-        if (row.status === "confirmed" && row.attendance !== "present") next[row.id] = "present";
+        if (row.status === "confirmed" && !row.certificateIssued && row.attendance !== "present") {
+          next[row.id] = "present";
+        }
       }
       return next;
     });
@@ -149,6 +166,7 @@ export function OrganizerEventDetail({ eventId }: Props) {
 
     setSavingAttendance(true);
     setAttendanceError("");
+    setLockWarning("");
     try {
       const saved = await recordAttendance(eventId, items);
       // A resposta é a lista inteira gravada do evento: redesenha a partir dela, casando por id.
@@ -161,11 +179,45 @@ export function OrganizerEventDetail({ eventId }: Props) {
       setConfirmAttendance(false);
       setAttendanceNotice("Presença salva.");
     } catch (err) {
-      setAttendanceError(
-        err instanceof ApiError ? err.message : "Não foi possível salvar a presença agora.",
-      );
+      const lockedIds = getAttendanceLockedIds(err);
+      if (lockedIds.length > 0) {
+        await handleAttendanceLocked(lockedIds);
+      } else {
+        setAttendanceError(
+          err instanceof ApiError ? err.message : "Não foi possível salvar a presença agora.",
+        );
+      }
     } finally {
       setSavingAttendance(false);
+    }
+  }
+
+  // A API recusou o lote inteiro porque alguém emitiu o certificado depois que a lista foi aberta
+  // (RC-04): nada foi gravado. As marcações dessas pessoas saem do rascunho; as outras ficam na tela
+  // para o organizador conferir e salvar de novo. A lista é relida para as linhas travadas
+  // aparecerem como travadas — e, se a releitura falhar, elas são travadas aqui mesmo, porque
+  // emitir exige presença.
+  async function handleAttendanceLocked(lockedIds: string[]) {
+    const locked = new Set(lockedIds);
+    const names = rows.filter((row) => locked.has(row.id)).map((row) => row.name);
+    const remaining = Object.keys(attendanceDraft).filter((id) => !locked.has(id)).length;
+
+    setAttendanceDraft((prev) => {
+      const next = { ...prev };
+      for (const id of lockedIds) delete next[id];
+      return next;
+    });
+    setConfirmAttendance(false);
+    setLockWarning(lockedMessage(names, remaining));
+
+    try {
+      setRows(await getOrganizerRegistrations(eventId));
+    } catch {
+      setRows((prev) =>
+        prev.map((row) =>
+          locked.has(row.id) ? { ...row, certificateIssued: true, attendance: "present" } : row,
+        ),
+      );
     }
   }
 
@@ -245,6 +297,13 @@ export function OrganizerEventDetail({ eventId }: Props) {
   const absentCount = confirmedRows.filter((row) => shownAttendance(row) === "absent").length;
   const unmarkedCount = confirmedRows.length - presentCount - absentCount;
   const pendingCount = Object.keys(attendanceDraft).length;
+  // RC-11: evento encerrado não é editado nem excluído — é o registro do que aconteceu. A carga
+  // horária é a exceção, até o primeiro certificado do evento ser emitido. A API decide; aqui a tela
+  // só deixa de oferecer o que seria recusado.
+  const eventEnded = event.computedStatus === "past";
+  const anyCertificateIssued = rows.some((row) => row.certificateIssued);
+  const certificateIssuedForEvent = anyCertificateIssued || workloadLocked;
+  const canEditWorkload = eventEnded && !certificateIssuedForEvent;
 
   return (
     <DashboardShell activeNav="events">
@@ -264,25 +323,54 @@ export function OrganizerEventDetail({ eventId }: Props) {
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <h1 className="wrap-break-word text-xl font-bold text-brand-teal sm:max-w-xl">{event.title}</h1>
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {!eventEnded ? (
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Button
+                  type="button"
+                  onClick={() => setModal("edit")}
+                  className="w-full sm:w-auto"
+                  variant="success"
+                >
+                  Editar
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => void handleDeleteEvent()}
+                  className="w-full sm:w-auto"
+                  variant="danger"
+                >
+                  Excluir
+                </Button>
+              </div>
+            ) : canEditWorkload ? (
               <Button
                 type="button"
-                onClick={() => setModal("edit")}
+                onClick={() => {
+                  setWorkloadNotice("");
+                  setWorkloadWarning("");
+                  setModal("workload");
+                }}
                 className="w-full sm:w-auto"
                 variant="success"
               >
-                Editar
+                Alterar carga horária
               </Button>
-              <Button
-                type="button"
-                onClick={() => void handleDeleteEvent()}
-                className="w-full sm:w-auto"
-                variant="danger"
-              >
-                Excluir
-              </Button>
-            </div>
+            ) : null}
           </div>
+
+          {eventEnded && (
+            <p className="text-sm text-gray-600">
+              {canEditWorkload
+                ? "Este evento já terminou, então não pode mais ser editado nem excluído. Só a carga horária ainda pode mudar, até o primeiro voluntário emitir o certificado."
+                : "Este evento já terminou e tem certificado emitido, então não pode mais ser editado nem excluído."}
+            </p>
+          )}
+          <FormAlert variant="success">{workloadNotice}</FormAlert>
+          {workloadWarning && (
+            <p role="alert" className="text-sm font-medium text-amber-800">
+              {workloadWarning}
+            </p>
+          )}
 
           <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
             <div className="flex h-48 w-full items-center justify-center bg-linear-to-r from-teal-600 to-cyan-500 sm:h-56">
@@ -371,8 +459,10 @@ export function OrganizerEventDetail({ eventId }: Props) {
               )}
               {presenceWindow.state !== "not-open" && !eventCancelled && workload === null && (
                 <p className="text-sm text-gray-600">
-                  Os certificados deste evento mostrarão só o período, sem carga horária. Para incluí-la,
-                  informe a carga horária em Editar.
+                  Os certificados deste evento {certificateIssuedForEvent ? "mostram" : "mostrarão"} só o período, sem
+                  carga horária.
+                  {!eventEnded && " Para incluí-la, informe a carga horária em Editar."}
+                  {canEditWorkload && " Para incluí-la, use Alterar carga horária antes que alguém emita o certificado."}
                 </p>
               )}
               {presenceWindow.state !== "not-open" && confirmedRows.length > 0 && (
@@ -383,22 +473,28 @@ export function OrganizerEventDetail({ eventId }: Props) {
                 </p>
               )}
               <FormAlert variant="success">{attendanceNotice}</FormAlert>
+              {lockWarning && (
+                <p className="text-sm font-medium text-amber-800" role="alert">
+                  {lockWarning}
+                </p>
+              )}
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-160 text-left text-sm">
+              <table className="w-full min-w-180 text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/80 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <th className="px-3 py-3 sm:px-6">Nome</th>
                     <th className="px-3 py-3 sm:px-6">Status</th>
                     <th className="px-3 py-3 sm:px-6">Presença</th>
+                    <th className="px-3 py-3 sm:px-6">Certificado</th>
                     <th className="px-3 py-3 text-right sm:px-6">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-10 text-center text-gray-500 sm:px-6">
+                      <td colSpan={5} className="px-3 py-10 text-center text-gray-500 sm:px-6">
                         Nenhum inscrito ainda.
                       </td>
                     </tr>
@@ -428,6 +524,13 @@ export function OrganizerEventDetail({ eventId }: Props) {
                         <td className="px-3 py-3 sm:px-6">
                           {row.status !== "confirmed" ? (
                             <span className="text-xs text-gray-500">Não se aplica</span>
+                          ) : row.certificateIssued ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-xs font-semibold text-gray-900">
+                                {attendanceLabel(row)}
+                              </span>
+                              <span className="text-xs text-gray-600">Travada: certificado já emitido</span>
+                            </div>
                           ) : canEditAttendance ? (
                             <fieldset className="flex gap-2">
                               <legend className="sr-only">Presença de {row.name}</legend>
@@ -452,6 +555,11 @@ export function OrganizerEventDetail({ eventId }: Props) {
                             <span className="text-xs text-gray-500">—</span>
                           )}
                         </td>
+                        <td className="px-3 py-3 text-xs sm:px-6">
+                          <span className={row.certificateIssued ? "font-semibold text-gray-900" : "text-gray-600"}>
+                            {certificateLabel(row, event.computedStatus === "past", eventCancelled)}
+                          </span>
+                        </td>
                         <td className="px-3 py-3 sm:px-6">
                           <div className="flex justify-end gap-2">
                             <IconButton
@@ -462,14 +570,19 @@ export function OrganizerEventDetail({ eventId }: Props) {
                               size="sm"
                               variant="secondary"
                             />
-                            <IconButton
-                              type="button"
-                              icon={<Trash2 size={18} strokeWidth={2} aria-hidden="true" />}
-                              label={`Cancelar inscrição de ${row.name}`}
-                              onClick={() => void handleCancelRegistration(row.id)}
-                              size="sm"
-                              variant="danger"
-                            />
+                            {/* Certificado só existe em evento encerrado, e a API recusa qualquer
+                                mudança de inscrição depois do fim (EVENT_ENDED): o botão só levaria
+                                a um erro. */}
+                            {!row.certificateIssued && (
+                              <IconButton
+                                type="button"
+                                icon={<Trash2 size={18} strokeWidth={2} aria-hidden="true" />}
+                                label={`Cancelar inscrição de ${row.name}`}
+                                onClick={() => void handleCancelRegistration(row.id)}
+                                size="sm"
+                                variant="danger"
+                              />
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -558,6 +671,28 @@ export function OrganizerEventDetail({ eventId }: Props) {
           />
         )}
 
+        {modal === "workload" && (
+          <WorkloadModal
+            event={event}
+            durationHours={durationWorkloadHours(event.startsAt, event.endsAt)}
+            onClose={() => setModal("none")}
+            onSaved={(nextEvent) => {
+              setEvent(nextEvent);
+              setModal("none");
+              setWorkloadNotice("Carga horária salva.");
+            }}
+            onLocked={(message) => {
+              setModal("none");
+              setWorkloadLocked(true);
+              setWorkloadWarning(message);
+              // Relê os inscritos para a coluna Certificado mostrar quem emitiu, e o botão sumir.
+              void getOrganizerRegistrations(eventId)
+                .then(setRows)
+                .catch(() => undefined);
+            }}
+          />
+        )}
+
         {modal === "publish-success" && (
           <PublishSuccessModal
             onCloseAction={() => setModal("none")}
@@ -571,7 +706,8 @@ export function OrganizerEventDetail({ eventId }: Props) {
         {modal === "publish-error" && (
           <PublishErrorModal
             onClose={() => setModal("none")}
-            onRetry={() => setModal("edit")}
+            // Evento encerrado não tem o diálogo de edição para onde voltar (RC-11).
+            onRetry={() => setModal(eventEnded ? "none" : "edit")}
             message={actionError}
           />
         )}
@@ -598,6 +734,39 @@ function attendanceLabel(row: SubscriberRecord): string {
   if (row.attendance === "present") return "Presente";
   if (row.attendance === "absent") return "Faltou";
   return "Sem marcação";
+}
+
+// A coluna Certificado, a partir do que está GRAVADO (não do rascunho): o voluntário só pode emitir
+// com a presença salva e o evento encerrado (RC-01). A API não manda a data da emissão na lista de
+// inscritos, então a linha diz só "Emitido".
+// Evento cancelado não emite (EVENT_CANCELLED), mesmo com presença gravada antes do cancelamento.
+function certificateLabel(
+  row: SubscriberRecord,
+  eventEnded: boolean,
+  eventCancelled: boolean,
+): string {
+  if (row.certificateIssued) return "Emitido";
+  if (eventCancelled || row.status !== "confirmed" || row.attendance !== "present") return "—";
+  return eventEnded ? "Disponível ao voluntário" : "Disponível após o término";
+}
+
+// `remaining`: quantas marcações de outras pessoas continuam no rascunho depois da recusa.
+function lockedMessage(names: string[], remaining: number): string {
+  const who =
+    names.length === 0
+      ? "Um voluntário"
+      : names.length === 1
+        ? names[0]
+        : `${names.slice(0, -1).join(", ")} e ${names[names.length - 1]}`;
+  const many = names.length > 1;
+  const tail =
+    remaining > 0
+      ? "; as outras marcações continuam na tela para você conferir e salvar de novo."
+      : ".";
+  return (
+    `${who} ${many ? "emitiram" : "emitiu"} o certificado enquanto você editava a lista, então nada foi ` +
+    `salvo. A presença ${many ? "dessas pessoas" : "dessa pessoa"} ficou travada como Presente${tail}`
+  );
 }
 
 function countLabel(count: number, singular: string, plural: string): string {

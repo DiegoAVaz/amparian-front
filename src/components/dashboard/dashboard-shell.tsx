@@ -9,6 +9,7 @@ import { getStoredUser, logoutAndClear } from "@/lib/auth";
 import {
   AgendaNavIcon,
   BellIcon,
+  CertificatesNavIcon,
   CloseIcon,
   EventsNavIcon,
   HelpNavIcon,
@@ -19,11 +20,13 @@ import {
   SettingsNavIcon,
   UserIcon,
 } from "./dashboard-shell-icons";
+import { OfflineNotice } from "./offline-notice";
 
 export type DashboardNavId =
   | "home"
   | "events"
   | "agenda"
+  | "certificates"
   | "settings"
   | "help"
   | "profiles"
@@ -178,6 +181,13 @@ export function DashboardShell({ activeNav, children }: Props) {
               onNavigate={closeMobileNav}
             />
             <SidebarLink
+              href="/home/certificados"
+              icon={<CertificatesNavIcon />}
+              label="Certificados"
+              active={activeNav === "certificates"}
+              onNavigate={closeMobileNav}
+            />
+            <SidebarLink
               href="/home/configuracoes"
               icon={<SettingsNavIcon />}
               label="Configurações"
@@ -210,6 +220,7 @@ export function DashboardShell({ activeNav, children }: Props) {
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
+          <OfflineNotice />
           {children}
         </div>
       </div>

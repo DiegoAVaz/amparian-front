@@ -1,4 +1,4 @@
-// Janela em que o organizador pode lançar a presença (RC-02): do início do evento até 30 dias
+// Janela em que o organizador pode lançar a presença: do início do evento até 30 dias
 // depois do fim — ou do início, se o evento não tiver data de fim. É a mesma regra da API, que é
 // quem decide; aqui ela serve para a tela não oferecer uma ação que a API vai recusar.
 

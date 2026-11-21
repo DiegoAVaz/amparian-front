@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Award } from "lucide-react";
 
 import {
   Avatar,
@@ -197,6 +198,14 @@ export function ProfilesContent() {
                   Ver minha agenda
                 </LinkButton>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+                  <LinkButton
+                    href="/home/certificados"
+                    className="w-full sm:w-auto"
+                    variant="secondary"
+                    leftIcon={<Award size={16} strokeWidth={2} />}
+                  >
+                    Ver meus certificados
+                  </LinkButton>
                   <LinkButton
                     href="/home/configuracoes"
                     className="w-full sm:w-auto"

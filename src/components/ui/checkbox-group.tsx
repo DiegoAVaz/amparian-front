@@ -41,6 +41,8 @@ export type CheckboxGroupProps = VariantProps<typeof checkboxGroupStyles> & {
   onChange: (values: string[]) => void;
   optionClassName?: string;
   options: CheckboxGroupOption[];
+  // Marca o grupo como obrigatório (ao menos uma opção), com o mesmo asterisco do FormField.
+  required?: boolean;
   values: string[];
 };
 
@@ -55,6 +57,7 @@ export function CheckboxGroup({
   optionClassName,
   options,
   orientation,
+  required,
   values,
 }: CheckboxGroupProps) {
   const styles = checkboxGroupStyles({ orientation });
@@ -70,7 +73,12 @@ export function CheckboxGroup({
 
   return (
     <fieldset className={cn(styles.base(), className)}>
-      {legend ? <legend className="text-xs font-medium text-gray-600">{legend}</legend> : null}
+      {legend ? (
+        <legend className="text-xs font-medium text-gray-600">
+          {legend}
+          {required ? <span className="text-red-600"> *</span> : null}
+        </legend>
+      ) : null}
       <div className={styles.options()}>
         {options.map((option) => {
           const checked = values.includes(option.value);

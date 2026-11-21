@@ -1,3 +1,5 @@
+import { clearOfflineApiCache } from "@/lib/offline/api-cache";
+
 const ACCESS_KEY = "amparian_access_token";
 const REFRESH_KEY = "amparian_refresh_token";
 const USER_KEY = "amparian_user";
@@ -11,6 +13,7 @@ export function persistSession(
   tokens: { accessToken: string; refreshToken: string },
   user: StoredUser,
 ): void {
+  clearOfflineApiCache();
   localStorage.setItem(ACCESS_KEY, tokens.accessToken);
   localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -52,7 +55,10 @@ export function updateStoredUser(patch: Partial<StoredUser>): StoredUser | null 
   return next;
 }
 
+// Todo fim de sessão passa por aqui — o logout e a sessão vencida que manda para o login —, então
+// é aqui que somem também as leituras guardadas para uso offline.
 export function clearSessionStorage(): void {
+  clearOfflineApiCache();
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
   localStorage.removeItem(USER_KEY);
